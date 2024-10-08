@@ -1,0 +1,67 @@
+[
+    {
+      "country": "USA",
+      "energyConsumed": 10000000,
+      "co2Emissions": 5000,
+      "year": 2020,
+      "latitude": 37.0902,
+      "longitude": -95.7129
+    },
+    {
+      "country": "China",
+      "energyConsumed": 8500000,
+      "co2Emissions": 4000,
+      "year": 2021,
+      "latitude": 35.8617,
+      "longitude": 104.1954
+    },
+    {
+      "country": "Germany",
+      "energyConsumed": 6200000,
+      "co2Emissions": 3000,
+      "year": 2022,
+      "latitude": 51.1657,
+      "longitude": 10.4515
+    },
+    {
+      "country": "UK",
+      "energyConsumed": 7800000,
+      "co2Emissions": 4500,
+      "year": 2019,
+      "latitude": 55.3781,
+      "longitude": -3.4360
+    },
+    {
+      "country": "India",
+      "energyConsumed": 7000000,
+      "co2Emissions": 3500,
+      "year": 2020,
+      "latitude": 20.5937,
+      "longitude": 78.9629
+    },
+    {
+      "country": "Brazil",
+      "energyConsumed": 5500000,
+      "co2Emissions": 2800,
+      "year": 2021,
+      "latitude": -14.2350,
+      "longitude": -51.9253
+    },
+    {
+      "country": "Australia",
+      "energyConsumed": 4800000,
+      "co2Emissions": 2500,
+      "year": 2022,
+      "latitude": -25.2744,
+      "longitude": 133.7751
+    },
+    {
+      "country": "Canada",
+      "energyConsumed": 6300000,
+      "co2Emissions": 3200,
+      "year": 2019,
+      "latitude": 56.1304,
+      "longitude": -106.3468
+    }
+  ]
+  
