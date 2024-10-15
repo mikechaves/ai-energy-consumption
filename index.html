@@ -34,6 +34,7 @@
         body {
             font-family: Arial, sans-serif;
             overflow: hidden; /* Prevent scrollbars */
+            cursor: default; /* Default cursor */
         }
 
         /* User Interface Controls */
@@ -81,13 +82,28 @@
         }
 
         /* Legend */
-        #legendCanvas {
+        #legendContainer {
             position: absolute;
             bottom: 10px;
             left: 10px;
             width: 200px;
             height: 40px;
             z-index: 1001;
+            display: flex;
+            align-items: center;
+        }
+
+        #legendCanvas {
+            flex: 1;
+            height: 20px;
+        }
+
+        /* Legend Labels */
+        .legend-label {
+            color: white; /* White text for visibility */
+            font-size: 12px;
+            margin-left: 5px;
+            margin-right: 5px;
         }
 
         /* Tooltip Styles */
@@ -102,6 +118,32 @@
             display: none;
             z-index: 1002;
             max-width: 250px;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        #tooltip.show {
+            opacity: 1;
+        }
+
+        /* Individual Tooltip Labels */
+        .tooltip-label {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            white-space: nowrap;
+            transform: translate(-50%, -100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .tooltip-label.visible {
+            opacity: 1;
         }
 
         /* Instruction Overlay */
@@ -225,7 +267,7 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
-            #controls, #activeFilters, #legendCanvas {
+            #controls, #activeFilters, #legendContainer {
                 width: 90%;
                 left: 5%;
                 right: 5%;
@@ -330,10 +372,14 @@
     </div>
 
     <!-- Legend -->
-    <canvas id="legendCanvas" width="200" height="40" aria-label="Color Legend"></canvas>
+    <div id="legendContainer">
+        <canvas id="legendCanvas" width="200" height="20" aria-label="Color Legend"></canvas>
+        <div class="legend-label left">0</div>
+        <div class="legend-label right">5,000,000</div>
+    </div>
 
-    <!-- Tooltip -->
-    <div id="tooltip" role="tooltip"></div>
+    <!-- Tooltip for Hover Interactions -->
+    <div id="tooltip" style="position: absolute; display: none; background: rgba(0, 0, 0, 0.75); color: white; padding: 5px; border-radius: 5px; z-index: 999;"></div>
 
     <!-- Detailed Info Modal -->
     <div id="infoModal" class="modal" role="dialog" aria-labelledby="modalCountryName" aria-modal="true">
@@ -351,18 +397,18 @@
     </div>
 
     <!-- A-Frame Scene -->
-    <a-scene>
+    <a-scene vr-mode-ui="enabled: false">
         <!-- Assets -->
         <a-assets>
             <img id="earthTexture" src="assets/earth_texture.jpg" alt="Earth Texture">
             <img id="starfieldTexture" src="assets/starfield_texture.jpg" alt="Starfield Texture">
         </a-assets>
 
-        <!-- Globe Entity -->
+        <!-- Globe Entity with Animation -->
         <a-entity id="globe" 
                   geometry="primitive: sphere; radius: 3" 
                   material="src: #earthTexture; metalness: 0.6; roughness: 0.4"
-                  animation="property: rotation; to: 0 360 0; loop: true; dur: 60000; easing: linear;">
+                  animation__rotation="property: rotation; to: 0 360 0; loop: true; dur: 60000; easing: linear">
         </a-entity>
 
         <!-- Starfield Background -->
@@ -371,13 +417,14 @@
         <!-- Camera Rig for Zoom and Rotation -->
         <a-entity id="cameraRig" position="0 0 10">
             <a-camera position="0 0 0" look-controls wasd-controls="enabled: true">
-                <!-- Cursor for Interactions -->
+                <!-- Invisible Cursor for Interactions -->
                 <a-cursor 
                     id="cursor"
                     fuse="false"
                     raycaster="objects: .data-bar"
                     cursor="fuse: false"
-                    raycaster="showLine: false">
+                    raycaster="showLine: false"
+                    material="shader: flat; opacity: 0; transparent: true;">
                 </a-cursor>
             </a-camera>
         </a-entity>
@@ -386,6 +433,11 @@
     <!-- Loading Spinner (Optional) -->
     <div id="loadingSpinner" class="overlay" aria-hidden="true">
         <div class="spinner"></div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" role="alert" aria-live="assertive">
+        Filters applied successfully!
     </div>
 
     <!-- Custom JavaScript -->

@@ -1,5 +1,3 @@
-// js/ai_energy_consumption_prototype.js
-
 window.onload = function() {
   // Reference to the loading spinner (Optional)
   const loadingSpinner = document.getElementById('loadingSpinner');
@@ -67,10 +65,11 @@ window.onload = function() {
           .domain([0, maxValue]);
 
       let filteredData = [];
-      let barsGroup;
       let isDragging = false;
       let previousMousePosition = { x: 0, y: 0 };
       let currentMousePosition = { x: 0, y: 0 }; // To track mouse position for tooltip
+
+      let displayMaxValue; // Declare displayMaxValue at this scope
 
       /**
        * Updates the maximum value based on the selected data type.
@@ -182,12 +181,6 @@ window.onload = function() {
               updateVisualization();
           });
 
-          // Mouse Events for Globe Rotation (Optional: Already handled by A-Frame controls)
-          // Not needed unless implementing custom rotation
-
-          // Touch Events for Globe Rotation (Optional: Already handled by A-Frame controls)
-          // Not needed unless implementing custom rotation
-
           // Track mouse movement for tooltip positioning
           window.addEventListener('mousemove', (event) => {
               currentMousePosition = { x: event.clientX, y: event.clientY };
@@ -199,26 +192,54 @@ window.onload = function() {
               cursor.addEventListener('mouseenter', function(event) {
                   const target = event.target;
                   if (target.classList.contains('data-bar')) {
-                      const data = target.getAttribute('data-info');
-                      showTooltipAtPosition(data, currentMousePosition.x, currentMousePosition.y);
+                      const dataInfo = target.getAttribute('data-info');
+                      if (dataInfo) {
+                          try {
+                              const data = JSON.parse(dataInfo);
+                              showHoverTooltipAtPosition(data, target);
+                              pauseGlobeRotation();
+                          } catch (e) {
+                              console.error('Error parsing data-info:', e);
+                          }
+                      }
                   }
               });
 
               cursor.addEventListener('mouseleave', function(event) {
                   const target = event.target;
                   if (target.classList.contains('data-bar')) {
-                      hideTooltip();
+                      hideHoverTooltip();
+                      resumeGlobeRotation();
                   }
               });
 
               cursor.addEventListener('click', function(event) {
                   const target = event.target;
                   if (target.classList.contains('data-bar')) {
-                      const data = target.getAttribute('data-info');
-                      openInfoModal(JSON.parse(data));
+                      const dataInfo = target.getAttribute('data-info');
+                      if (dataInfo) {
+                          try {
+                              const data = JSON.parse(dataInfo);
+                              openInfoModal(data);
+                          } catch (e) {
+                              console.error('Error parsing data-info:', e);
+                          }
+                      }
                   }
               });
           }
+
+          // Adjust Level of Detail (LOD) on camera movement
+          cameraRig.addEventListener('componentchanged', function(event) {
+              if (event.detail.name === 'position') {
+                  adjustLOD();
+              }
+          });
+
+          // Update tooltip positions on window resize
+          window.addEventListener('resize', () => {
+              positionAllTooltipsThrottled();
+          });
       }
 
       /**
@@ -363,66 +384,216 @@ window.onload = function() {
 
           console.log(`Filtered Data Count: ${filteredData.length}`);
 
-          // Recalculate displayMaxValue based on the filtered data
-          const displayMaxValue = d3.max(filteredData, d => d[currentDataType]) || 1; // Prevent division by zero
-          console.log(`Display Max Value: ${displayMaxValue}`);
+          // Calculate displayMaxValue based on filtered data
+          displayMaxValue = d3.max(filteredData, d => d[currentDataType]) || 1; // Prevent division by zero
 
           // Update the color scale domain
           const updatedColorScale = d3.scaleSequential(d3.interpolatePlasma)
               .domain([0, displayMaxValue]);
 
-          // Remove existing bars group if it exists
-          let existingBarsGroup = globe.querySelector('.bars-group');
-          if (existingBarsGroup) {
-              globe.removeChild(existingBarsGroup);
+          createBars(updatedColorScale); // Pass updatedColorScale to createBars
+          updateLegend(displayMaxValue, updatedColorScale);
+          updateActiveFilters();
+          positionAllTooltipsThrottled(); // Position tooltips after creating bars
+      }
+
+      /**
+       * Creates individual tooltip labels for each data bar.
+       * @param {Object} dataItem - The data object for a single country.
+       * @param {HTMLElement} barElement - The A-Frame element representing the bar.
+       */
+      function createTooltipLabel(dataItem, barElement) {
+          const tooltip = document.createElement('div');
+          tooltip.classList.add('tooltip-label');
+          tooltip.innerHTML = `
+              <strong>${dataItem.country}</strong><br/>
+              ${formatDataType(currentDataType)}: ${dataItem[currentDataType].toLocaleString()}<br/>
+              Population: ${dataItem.population.toLocaleString()}
+          `;
+          document.body.appendChild(tooltip);
+          barElement.tooltipLabel = tooltip; // Attach tooltip to bar element
+      }
+
+      /**
+       * Positions all tooltip labels based on their corresponding bar positions.
+       */
+      function positionAllTooltips() {
+          filteredData.forEach(d => {
+              const barElement = document.querySelector(`.data-bar[data-info='${JSON.stringify(d)}']`);
+              if (barElement && barElement.tooltipLabel) {
+                  const barPosition = new THREE.Vector3();
+                  barElement.object3D.getWorldPosition(barPosition);
+                  const vector = barPosition.project(scene.camera);
+
+                  const canvas = scene.canvas;
+                  const widthHalf = canvas.clientWidth / 2;
+                  const heightHalf = canvas.clientHeight / 2;
+
+                  const pixelX = (vector.x * widthHalf) + widthHalf;
+                  const pixelY = -(vector.y * heightHalf) + heightHalf;
+
+                  // Only show tooltip if the bar is in front of the camera
+                  if (vector.z < 1) {
+                      barElement.tooltipLabel.style.left = `${pixelX}px`;
+                      barElement.tooltipLabel.style.top = `${pixelY}px`;
+                      barElement.tooltipLabel.classList.add('visible');
+                  } else {
+                      barElement.tooltipLabel.classList.remove('visible');
+                  }
+              }
+          });
+      }
+
+      /**
+       * Throttles the tooltip positioning to improve performance.
+       */
+      let lastTooltipUpdate = 0;
+      const tooltipUpdateInterval = 100; // in milliseconds
+
+      function positionAllTooltipsThrottled(timestamp) {
+          if (timestamp - lastTooltipUpdate < tooltipUpdateInterval) {
+              requestAnimationFrame(positionAllTooltipsThrottled);
+              return;
           }
+          lastTooltipUpdate = timestamp;
+          positionAllTooltips();
+          requestAnimationFrame(positionAllTooltipsThrottled);
+      }
 
-          // Create a new bars group
-          barsGroup = document.createElement('a-entity');
-          barsGroup.setAttribute('class', 'bars-group');
-          globe.appendChild(barsGroup);
+      /**
+       * Creates the bars and their corresponding tooltips.
+       * @param {Function} colorScale - The D3 color scale function.
+       */
+      function createBars(colorScale) {
+          // Remove existing bars and tooltips
+          const existingBars = document.querySelectorAll('.data-bar');
+          existingBars.forEach(bar => {
+              if (bar.tooltipLabel) {
+                  bar.tooltipLabel.parentNode.removeChild(bar.tooltipLabel);
+              }
+              bar.parentNode.removeChild(bar);
+          });
 
-          // Create bars for each filtered data point
           filteredData.forEach(d => {
               const lat = d.latitude;
               const lon = d.longitude;
               const value = d[currentDataType];
               const barHeight = (value / displayMaxValue) * 2 + 0.1; // Scale height
-              const barColor = updatedColorScale(value);
+              const barColor = colorScale(value);
 
-              // Convert lat/lon to Vector3 position
               const barPosition = latLongToVector3(lat, lon, 3); // Globe radius is 3
 
-              // Create a cylinder to represent the data bar
               const bar = document.createElement('a-cylinder');
               bar.setAttribute('radius', 0.05);
               bar.setAttribute('height', barHeight);
               bar.setAttribute('color', barColor);
               bar.setAttribute('class', 'data-bar');
-              bar.setAttribute('data-info', JSON.stringify(d)); // Store data in attribute for event handling
+              bar.setAttribute('data-info', JSON.stringify(d));
 
-              // Compute quaternion rotation to align the bar perpendicular to the globe's surface
               const quaternion = computeBarRotation(barPosition);
-
-              // Apply the quaternion rotation
               bar.object3D.quaternion.copy(quaternion);
 
-              // Adjust position to extend from the globe's surface
-              const barHeightOffset = barHeight / 2; // Half the bar's height
+              const barHeightOffset = barHeight / 2;
               const finalPosition = barPosition.clone().add(barPosition.clone().normalize().multiplyScalar(barHeightOffset));
-
-              // Set the bar's position
               bar.object3D.position.copy(finalPosition);
 
-              // Append the bar to the bars group
-              barsGroup.appendChild(bar);
+              globe.appendChild(bar);
+
+              // Create tooltip label
+              createTooltipLabel(d, bar);
           });
 
-          // Update the legend based on the current data
-          updateLegend(displayMaxValue, updatedColorScale);
+          // After all bars are created, position tooltips
+          positionAllTooltipsThrottled();
 
-          // Update active filters display
-          updateActiveFilters();
+          // Start the throttled tooltip positioning loop if not already started
+          if (!positionAllTooltipsThrottled.started) {
+              requestAnimationFrame(positionAllTooltipsThrottled);
+              positionAllTooltipsThrottled.started = true;
+          }
+      }
+
+      /**
+       * Handles mouse entering a bar (for hover tooltip).
+       * @param {Event} event - The mouseenter event.
+       * @param {Object} data - The data object for the hovered bar.
+       * @param {HTMLElement} barElement - The A-Frame element representing the bar.
+       */
+      function handleBarMouseEnter(event, data, barElement) {
+          // Hover tooltip is already handled by individual tooltip labels
+          // Additional interactions can be added here if needed
+      }
+
+      /**
+       * Handles mouse leaving a bar (for hover tooltip).
+       * @param {Event} event - The mouseleave event.
+       */
+      function handleBarMouseLeave(event) {
+          // Hover tooltip is already handled by individual tooltip labels
+          // Additional interactions can be added here if needed
+      }
+
+      /**
+       * Shows the hover tooltip at the current mouse position.
+       * @param {Object} data - The data object for the hovered bar.
+       * @param {HTMLElement} barElement - The A-Frame element representing the bar.
+       */
+      function showHoverTooltipAtPosition(data, barElement) {
+          if (!tooltip) return;
+
+          tooltip.innerHTML = `
+              <strong>${data.country}</strong><br/>
+              ${formatDataType(currentDataType)}: ${data[currentDataType].toLocaleString()}<br/>
+              Population: ${data.population.toLocaleString()}
+          `;
+
+          // Get the 3D position of the bar
+          const barPosition = new THREE.Vector3();
+          barElement.object3D.getWorldPosition(barPosition);
+
+          // Project the position of the bar to 2D screen coordinates
+          const camera = scene.camera;
+          const vector = barPosition.project(camera);
+
+          // Convert to pixel coordinates
+          const canvas = scene.canvas;
+          const widthHalf = 0.5 * canvas.clientWidth;
+          const heightHalf = 0.5 * canvas.clientHeight;
+          const pixelX = (vector.x * widthHalf) + widthHalf;
+          const pixelY = -(vector.y * heightHalf) + heightHalf;
+
+          // Position the tooltip
+          tooltip.style.left = `${pixelX}px`;
+          tooltip.style.top = `${pixelY - 40}px`; // Adjust as needed
+          tooltip.classList.add('show');
+      }
+
+      /**
+       * Hides the hover tooltip.
+       */
+      function hideHoverTooltip() {
+          if (!tooltip) return;
+          tooltip.classList.remove('show');
+      }
+
+      /**
+       * Pauses the globe's rotation animation.
+       */
+      function pauseGlobeRotation() {
+          globe.removeAttribute('animation__rotation');
+      }
+
+      /**
+       * Resumes the globe's rotation animation.
+       */
+      function resumeGlobeRotation() {
+          globe.setAttribute('animation__rotation', {
+              property: 'rotation',
+              to: '0 360 0',
+              loop: true,
+              dur: 60000,
+              easing: 'linear'
+          });
       }
 
       /**
@@ -467,61 +638,6 @@ window.onload = function() {
           const normalizedVector = vector.clone().normalize();
           const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normalizedVector);
           return quaternion;
-      }
-
-      /**
-       * Displays the tooltip with detailed information about the data bar at a specific position.
-       * @param {Object} data - The data object associated with the bar.
-       * @param {number} x - The x-coordinate for the tooltip position.
-       * @param {number} y - The y-coordinate for the tooltip position.
-       */
-      function showTooltipAtPosition(data, x, y) {
-          if (!tooltip) return;
-
-          const dataTypeLabels = {
-              'energyConsumed': 'Energy Consumed',
-              'co2Emissions': 'CO₂ Emissions',
-              'energyPerCapita': 'Energy Consumption per Capita',
-              'co2PerCapita': 'CO₂ Emissions per Capita'
-          };
-
-          const perCapitaDataTypes = {
-              'energyConsumed': 'energyPerCapita',
-              'co2Emissions': 'co2PerCapita'
-          };
-
-          // Determine if current data type is per capita
-          const isPerCapita = currentDataType.endsWith('PerCapita');
-
-          // Prepare per capita value if applicable
-          let perCapitaText = '';
-          if (!isPerCapita && perCapitaDataTypes[currentDataType]) {
-              const perCapitaValue = data[perCapitaDataTypes[currentDataType]];
-              if (perCapitaValue != null) {
-                  perCapitaText = `Per Capita: ${perCapitaValue.toLocaleString()}<br/>`;
-              }
-          }
-
-          // Build the tooltip content
-          tooltip.innerHTML = `
-              <strong>${data.country}</strong><br/>
-              ${dataTypeLabels[currentDataType]}: ${data[currentDataType] != null ? data[currentDataType].toLocaleString() : 'N/A'}<br/>
-              Population: ${data.population != null ? data.population.toLocaleString() : 'N/A'}<br/>
-              ${perCapitaText}
-          `;
-
-          // Position the tooltip
-          tooltip.style.left = `${x + 15}px`;
-          tooltip.style.top = `${y + 15}px`;
-          tooltip.style.display = 'block';
-      }
-
-      /**
-       * Hides the tooltip.
-       */
-      function hideTooltip() {
-          if (!tooltip) return;
-          tooltip.style.display = 'none';
       }
 
       /**
@@ -654,13 +770,32 @@ window.onload = function() {
           context.fillStyle = gradient;
           context.fillRect(0, 0, canvas.width, 20);
 
-          // Add text labels
-          context.fillStyle = '#000';
-          context.font = '12px Arial';
-          context.textAlign = 'left';
-          context.fillText(`0`, 0, 35);
-          context.textAlign = 'right';
-          context.fillText(`${Math.round(maxValue).toLocaleString()}`, canvas.width, 35);
+          // Legend labels are handled via separate divs with white text
+      }
+
+      /**
+       * Adjusts the level of detail based on camera distance.
+       */
+      function adjustLOD() {
+          const cameraRig = document.getElementById('cameraRig');
+          const cameraPosition = cameraRig.getAttribute('position');
+          const distance = cameraPosition.z;
+
+          if (!globe) return; // Early exit if globe is undefined
+
+          if (distance > 15) {
+              // Hide data bars for better performance
+              const dataBars = document.querySelectorAll('.data-bar');
+              dataBars.forEach(bar => {
+                  bar.setAttribute('visible', 'false');
+              });
+          } else {
+              // Show data bars
+              const dataBars = document.querySelectorAll('.data-bar');
+              dataBars.forEach(bar => {
+                  bar.setAttribute('visible', 'true');
+              });
+          }
       }
 
       /**
@@ -668,6 +803,7 @@ window.onload = function() {
        */
       function initialize() {
           setupEventListeners();
+          updateMaxValue();
           updateVisualization();
 
           // Hide the loading spinner after initialization (Optional)
@@ -684,6 +820,9 @@ window.onload = function() {
                   closeInfoModal();
               }
           });
+
+          // Make sure to call resumeGlobeRotation initially to start the rotation
+          resumeGlobeRotation();
       }
 
       /**
