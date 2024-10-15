@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
     
+    <!-- Font Awesome CSS for Icons (Integrity Attributes Removed) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
     <!-- Custom CSS -->
     <style>
         /* Reset default margins and paddings */
@@ -120,7 +123,25 @@
             padding: 30px;
             border-radius: 8px;
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
+        }
+
+        .instruction-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .instruction-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .instruction-list li i {
+            margin-right: 10px;
+            color: #2E8B57;
         }
 
         #closeInstructionsBtn {
@@ -214,14 +235,35 @@
                 width: 95%;
             }
         }
+
+        /* Loading Spinner Styles (Optional) */
+        .spinner {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #2E8B57; /* Green */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <!-- Instruction Overlay -->
     <div id="instructionOverlay" class="overlay">
         <div class="overlay-content">
-            <h2>Welcome to the AI Energy Consumption Visualization</h2>
-            <p>Use the controls to explore energy consumption and CO₂ emissions across different countries.</p>
+            <h2>Welcome to the AI Energy Consumption Visualization!</h2>
+            <p>Explore global energy consumption and CO₂ emissions data seamlessly.</p>
+            <ul class="instruction-list">
+                <li><i class="fas fa-arrows-alt"></i><strong>Rotate:</strong> Use your mouse or touch to rotate the globe.</li>
+                <li><i class="fas fa-search-plus"></i><strong>Zoom:</strong> Scroll or use the zoom buttons to zoom in and out.</li>
+                <li><i class="fas fa-info-circle"></i><strong>Details:</strong> Hover over the bars to see detailed data.</li>
+                <li><i class="fas fa-filter"></i><strong>Filter:</strong> Use the controls to filter and explore different data.</li>
+            </ul>
             <button id="closeInstructionsBtn">Start Exploring</button>
         </div>
     </div>
@@ -262,9 +304,9 @@
         <input type="range" id="dataRange" min="0" max="100" value="100" step="1">
         <span id="dataRangeValue">100% (5,000,000)</span>
 
-        <button id="zoomInBtn">Zoom In</button>
-        <button id="zoomOutBtn">Zoom Out</button>
-        <button id="resetViewBtn">Reset View</button>
+        <button id="zoomInBtn"><i class="fas fa-search-plus"></i> Zoom In</button>
+        <button id="zoomOutBtn"><i class="fas fa-search-minus"></i> Zoom Out</button>
+        <button id="resetViewBtn"><i class="fas fa-sync-alt"></i> Reset View</button>
     </div>
 
     <!-- Legend -->
@@ -311,6 +353,11 @@
             <a-camera position="0 0 0" look-controls wasd-controls="enabled: true"></a-camera>
         </a-entity>
     </a-scene>
+
+    <!-- Loading Spinner (Optional) -->
+    <div id="loadingSpinner" class="overlay">
+        <div class="spinner"></div>
+    </div>
 
     <!-- Custom JavaScript -->
     <script src="js/ai_energy_consumption_prototype.js"></script>

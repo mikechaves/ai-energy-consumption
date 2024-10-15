@@ -1,6 +1,14 @@
 // js/ai_energy_consumption_prototype.js
 
 window.onload = function() {
+  // Reference to the loading spinner (Optional)
+  const loadingSpinner = document.getElementById('loadingSpinner');
+
+  // Show the spinner before data is loaded
+  if (loadingSpinner) {
+      loadingSpinner.style.display = 'flex';
+  }
+
   // Fetch data from the JSON file
   fetch('ai_energy_consumption_data.json')
       .then(response => response.json())
@@ -10,6 +18,10 @@ window.onload = function() {
       })
       .catch(error => {
           console.error('Error fetching data:', error);
+          // Hide the spinner if there's an error
+          if (loadingSpinner) {
+              loadingSpinner.style.display = 'none';
+          }
       });
 
   /**
@@ -17,15 +29,11 @@ window.onload = function() {
    * @param {Array} data - The array of country data objects.
    */
   function initVisualization(data) {
-      // Reference to the A-Frame scene
+      // References to DOM elements
       const scene = document.querySelector('a-scene');
-      // Reference to the globe entity
       const globe = document.getElementById('globe');
-      // Reference to the camera rig
       const cameraRig = document.getElementById('cameraRig');
-      // Reference to the tooltip
       const tooltip = document.getElementById('tooltip');
-      // UI Controls
       const dataTypeSelect = document.getElementById('dataTypeSelect');
       const regionSelect = document.getElementById('regionSelect');
       const countrySearch = document.getElementById('countrySearch');
@@ -36,8 +44,6 @@ window.onload = function() {
       const resetViewBtn = document.getElementById('resetViewBtn');
       const instructionOverlay = document.getElementById('instructionOverlay');
       const closeInstructionsBtn = document.getElementById('closeInstructionsBtn');
-
-      // Modal Elements
       const infoModal = document.getElementById('infoModal');
       const closeModal = document.getElementById('closeModal');
       const modalCountryName = document.getElementById('modalCountryName');
@@ -45,12 +51,9 @@ window.onload = function() {
       const modalCO2Emissions = document.getElementById('modalCO2Emissions');
       const modalPopulation = document.getElementById('modalPopulation');
       const historicalChartCtx = document.getElementById('historicalChart').getContext('2d');
-      let historicalChart; // To store the Chart.js instance
-
-      // Active Filters Display
       const activeFiltersList = document.getElementById('filtersList');
 
-      // Ensure THREE.js is accessible
+      let historicalChart; // To store the Chart.js instance
       const THREE = AFRAME.THREE;
 
       // Current filter states
@@ -78,7 +81,7 @@ window.onload = function() {
       }
 
       /**
-       * Initializes event listeners for UI controls.
+       * Initializes event listeners for UI controls and interactions.
        */
       function setupEventListeners() {
           // Close instruction overlay
@@ -261,16 +264,6 @@ window.onload = function() {
       }
 
       /**
-       * Updates the maximum value based on the selected data type.
-       */
-      function updateMaxValue() {
-          maxValue = d3.max(data, d => d[currentDataType]) || 1; // Prevent division by zero
-          // Update color scale domain
-          colorScale.domain([0, maxValue]);
-          console.log(`Updated maxValue for ${currentDataType}: ${maxValue}`);
-      }
-
-      /**
        * Updates the active filters display.
        */
       function updateActiveFilters() {
@@ -281,7 +274,7 @@ window.onload = function() {
           // Data Type Filter
           if (currentDataType) {
               const li = document.createElement('li');
-              li.innerText = `Data Type: ${currentDataType.replace(/([A-Z])/g, ' $1').trim()}`;
+              li.innerText = `Data Type: ${formatDataType(currentDataType)}`;
               activeFiltersList.appendChild(li);
           }
 
@@ -295,7 +288,7 @@ window.onload = function() {
           // Country Search Filter
           if (searchTerm) {
               const li = document.createElement('li');
-              li.innerText = `Country: ${searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1)}`;
+              li.innerText = `Country: ${capitalizeFirstLetter(searchTerm)}`;
               activeFiltersList.appendChild(li);
           }
 
@@ -307,6 +300,35 @@ window.onload = function() {
       }
 
       /**
+       * Formats the data type string for display.
+       * @param {string} dataType - The data type key.
+       * @returns {string} - The formatted data type.
+       */
+      function formatDataType(dataType) {
+          switch(dataType) {
+              case 'energyConsumed':
+                  return 'Energy Consumption';
+              case 'co2Emissions':
+                  return 'CO₂ Emissions';
+              case 'energyPerCapita':
+                  return 'Energy Consumption per Capita';
+              case 'co2PerCapita':
+                  return 'CO₂ Emissions per Capita';
+              default:
+                  return dataType;
+          }
+      }
+
+      /**
+       * Capitalizes the first letter of a string.
+       * @param {string} string - The string to capitalize.
+       * @returns {string} - The capitalized string.
+       */
+      function capitalizeFirstLetter(string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+
+      /**
        * Updates the visualization based on current filters.
        */
       function updateVisualization() {
@@ -315,9 +337,6 @@ window.onload = function() {
           // Reference to the data range slider and its display
           const dataRange = document.getElementById('dataRange');
           const dataRangeValue = document.getElementById('dataRangeValue');
-
-          // Reference to the tooltip
-          const tooltip = document.getElementById('tooltip');
 
           // Reference to the data type selector
           const dataTypeSelect = document.getElementById('dataTypeSelect');
@@ -358,13 +377,13 @@ window.onload = function() {
           console.log(`Display Max Value: ${displayMaxValue}`);
 
           // Update the color scale domain
-          const colorScale = d3.scaleSequential(d3.interpolatePlasma)
+          const updatedColorScale = d3.scaleSequential(d3.interpolatePlasma)
               .domain([0, displayMaxValue]);
 
           // Remove existing bars group if it exists
-          let barsGroup = globe.querySelector('.bars-group');
-          if (barsGroup) {
-              globe.removeChild(barsGroup);
+          let existingBarsGroup = globe.querySelector('.bars-group');
+          if (existingBarsGroup) {
+              globe.removeChild(existingBarsGroup);
           }
 
           // Create a new bars group
@@ -378,7 +397,7 @@ window.onload = function() {
               const lon = d.longitude;
               const value = d[currentDataType];
               const barHeight = (value / displayMaxValue) * 2 + 0.1; // Scale height
-              const barColor = colorScale(value);
+              const barColor = updatedColorScale(value);
 
               // Convert lat/lon to Vector3 position
               const barPosition = latLongToVector3(lat, lon, 3); // Globe radius is 3
@@ -418,7 +437,7 @@ window.onload = function() {
           });
 
           // Update the legend based on the current data
-          updateLegend(displayMaxValue, colorScale);
+          updateLegend(displayMaxValue, updatedColorScale);
 
           // Update active filters display
           updateActiveFilters();
@@ -565,7 +584,7 @@ window.onload = function() {
               data: {
                   labels: historicalData.years,
                   datasets: [{
-                      label: `${dataTypeSelect.options[dataTypeSelect.selectedIndex].text} Over Time`,
+                      label: `${formatDataType(currentDataType)} Over Time`,
                       data: historicalData.values,
                       borderColor: 'rgba(75, 192, 192, 1)',
                       backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -602,7 +621,7 @@ window.onload = function() {
                           display: true,
                           title: {
                               display: true,
-                              text: dataTypeSelect.options[dataTypeSelect.selectedIndex].text
+                              text: formatDataType(currentDataType)
                           }
                       }
                   }
@@ -626,7 +645,7 @@ window.onload = function() {
           for (let i = 10; i >= 1; i--) {
               years.push(currentYear - i);
               // Simulate some growth or decline
-              const variation = data[dataTypeSelect.value] * (0.8 + Math.random() * 0.4);
+              const variation = data[currentDataType] * (0.8 + Math.random() * 0.4);
               values.push(Math.round(variation));
           }
           return { years, values };
@@ -677,110 +696,16 @@ window.onload = function() {
       }
 
       /**
-       * Opens the information modal and populates it with detailed data.
-       * @param {Object} data - The data object associated with the clicked bar.
-       */
-      function openInfoModal(data) {
-          // Populate modal with data
-          modalCountryName.innerText = data.country;
-          modalEnergyConsumed.innerText = data.energyConsumed != null ? data.energyConsumed.toLocaleString() : 'N/A';
-          modalCO2Emissions.innerText = data.co2Emissions != null ? data.co2Emissions.toLocaleString() : 'N/A';
-          modalPopulation.innerText = data.population != null ? data.population.toLocaleString() : 'N/A';
-
-          // Example: Generate mock historical data
-          const historicalData = generateMockHistoricalData(data);
-
-          // Destroy previous chart instance if it exists
-          if (historicalChart) {
-              historicalChart.destroy();
-          }
-
-          // Create new chart
-          historicalChart = new Chart(historicalChartCtx, {
-              type: 'line',
-              data: {
-                  labels: historicalData.years,
-                  datasets: [{
-                      label: `${dataTypeSelect.options[dataTypeSelect.selectedIndex].text} Over Time`,
-                      data: historicalData.values,
-                      borderColor: 'rgba(75, 192, 192, 1)',
-                      backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                      fill: true,
-                      tension: 0.1
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                      legend: {
-                          display: true
-                      },
-                      tooltip: {
-                          mode: 'index',
-                          intersect: false
-                      }
-                  },
-                  interaction: {
-                      mode: 'nearest',
-                      axis: 'x',
-                      intersect: false
-                  },
-                  scales: {
-                      x: {
-                          display: true,
-                          title: {
-                              display: true,
-                              text: 'Year'
-                          }
-                      },
-                      y: {
-                          display: true,
-                          title: {
-                              display: true,
-                              text: dataTypeSelect.options[dataTypeSelect.selectedIndex].text
-                          }
-                      }
-                  }
-              }
-          });
-
-          // Display the modal
-          infoModal.style.display = 'block';
-      }
-
-      /**
-       * Generates mock historical data for demonstration purposes.
-       * Replace this with actual historical data if available.
-       * @param {Object} data - The data object for the selected country.
-       * @returns {Object} An object containing years and corresponding values.
-       */
-      function generateMockHistoricalData(data) {
-          const currentYear = new Date().getFullYear();
-          const years = [];
-          const values = [];
-          for (let i = 10; i >= 1; i--) {
-              years.push(currentYear - i);
-              // Simulate some growth or decline
-              const variation = data[dataTypeSelect.value] * (0.8 + Math.random() * 0.4);
-              values.push(Math.round(variation));
-          }
-          return { years, values };
-      }
-
-      /**
-       * Closes the information modal.
-       */
-      function closeInfoModal() {
-          infoModal.style.display = 'none';
-      }
-
-      /**
        * Initializes the visualization by setting up event listeners and rendering the initial data.
        */
       function initialize() {
           setupEventListeners();
           updateVisualization();
+
+          // Hide the loading spinner after initialization (Optional)
+          if (loadingSpinner) {
+              loadingSpinner.style.display = 'none';
+          }
 
           // Event listener for closing the modal
           closeModal.addEventListener('click', closeInfoModal);
