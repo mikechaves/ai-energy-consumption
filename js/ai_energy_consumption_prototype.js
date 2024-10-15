@@ -52,6 +52,7 @@ window.onload = function() {
       const modalPopulation = document.getElementById('modalPopulation');
       const historicalChartCtx = document.getElementById('historicalChart').getContext('2d');
       const activeFiltersList = document.getElementById('filtersList');
+      const successMessage = document.getElementById('successMessage');
 
       let historicalChart; // To store the Chart.js instance
       const THREE = AFRAME.THREE;
@@ -69,6 +70,7 @@ window.onload = function() {
       let barsGroup;
       let isDragging = false;
       let previousMousePosition = { x: 0, y: 0 };
+      let currentMousePosition = { x: 0, y: 0 }; // To track mouse position for tooltip
 
       /**
        * Updates the maximum value based on the selected data type.
@@ -109,20 +111,25 @@ window.onload = function() {
               dataRange.value = 100;
               rangePercentage = 1;
               dataRangeValue.innerText = `100% (${Math.round(maxValue).toLocaleString()})`;
+              showSuccessMessage('Data type changed successfully!');
               updateVisualization();
           });
 
           // Region Selector
           regionSelect.addEventListener('change', () => {
               currentRegion = regionSelect.value;
+              showSuccessMessage('Region filter applied successfully!');
               updateVisualization();
           });
 
-          // Country Search with Autocomplete
-          countrySearch.addEventListener('input', () => {
+          // Country Search with Autocomplete (Debounced)
+          const debouncedCountrySearch = debounce(() => {
               searchTerm = countrySearch.value.toLowerCase();
+              showSuccessMessage('Country search updated successfully!');
               updateVisualization();
-          });
+          }, 300);
+
+          countrySearch.addEventListener('input', debouncedCountrySearch);
 
           // Initialize Awesomplete for Country Search
           initializeAutocomplete(data);
@@ -139,7 +146,7 @@ window.onload = function() {
               }
               const rangeMaxValue = maxValue * rangePercentage;
               dataRangeValue.innerText = `${dataRange.value}% (${Math.round(rangeMaxValue).toLocaleString()})`;
-              console.log(`Range Slider Changed: ${dataRange.value}% (${rangeMaxValue})`);
+              showSuccessMessage('Value filter updated successfully!');
               updateVisualization();
           });
 
@@ -171,82 +178,47 @@ window.onload = function() {
               dataRange.value = 100;
               rangePercentage = 1;
               dataRangeValue.innerText = `100% (${Math.round(maxValue).toLocaleString()})`;
+              showSuccessMessage('View reset successfully!');
               updateVisualization();
           });
 
-          // Mouse Events for Globe Rotation
-          scene.addEventListener('mousedown', function(event) {
-              isDragging = true;
-              globe.removeAttribute('animation'); // Stop automatic rotation
-              previousMousePosition = { x: event.clientX, y: event.clientY };
+          // Mouse Events for Globe Rotation (Optional: Already handled by A-Frame controls)
+          // Not needed unless implementing custom rotation
+
+          // Touch Events for Globe Rotation (Optional: Already handled by A-Frame controls)
+          // Not needed unless implementing custom rotation
+
+          // Track mouse movement for tooltip positioning
+          window.addEventListener('mousemove', (event) => {
+              currentMousePosition = { x: event.clientX, y: event.clientY };
           });
 
-          scene.addEventListener('mouseup', function() {
-              isDragging = false;
-              // Resume automatic rotation
-              globe.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 60000; easing: linear;');
-          });
+          // Handle A-Frame cursor events for tooltips
+          const cursor = document.getElementById('cursor');
+          if (cursor) {
+              cursor.addEventListener('mouseenter', function(event) {
+                  const target = event.target;
+                  if (target.classList.contains('data-bar')) {
+                      const data = target.getAttribute('data-info');
+                      showTooltipAtPosition(data, currentMousePosition.x, currentMousePosition.y);
+                  }
+              });
 
-          scene.addEventListener('mousemove', function(event) {
-              if (isDragging) {
-                  const deltaX = event.clientX - previousMousePosition.x;
-                  const deltaY = event.clientY - previousMousePosition.y;
+              cursor.addEventListener('mouseleave', function(event) {
+                  const target = event.target;
+                  if (target.classList.contains('data-bar')) {
+                      hideTooltip();
+                  }
+              });
 
-                  // Get current rotation
-                  let rotation = globe.getAttribute('rotation');
-                  rotation.x = parseFloat(rotation.x) || 0;
-                  rotation.y = parseFloat(rotation.y) || 0;
-                  rotation.z = parseFloat(rotation.z) || 0;
-
-                  // Update rotation based on mouse movement
-                  rotation.y += deltaX * 0.5;
-                  rotation.x += deltaY * 0.5;
-
-                  globe.setAttribute('rotation', `${rotation.x} ${rotation.y} ${rotation.z}`);
-
-                  previousMousePosition = { x: event.clientX, y: event.clientY };
-              }
-
-              // Update tooltip position
-              updateTooltipPosition(event);
-          });
-
-          // Touch Events for Globe Rotation
-          let touchStartX, touchStartY;
-
-          scene.addEventListener('touchstart', function(event) {
-              isDragging = true;
-              globe.removeAttribute('animation');
-              touchStartX = event.touches[0].clientX;
-              touchStartY = event.touches[0].clientY;
-          });
-
-          scene.addEventListener('touchmove', function(event) {
-              if (isDragging) {
-                  const deltaX = event.touches[0].clientX - touchStartX;
-                  const deltaY = event.touches[0].clientY - touchStartY;
-
-                  // Get current rotation
-                  let rotation = globe.getAttribute('rotation');
-                  rotation.x = parseFloat(rotation.x) || 0;
-                  rotation.y = parseFloat(rotation.y) || 0;
-                  rotation.z = parseFloat(rotation.z) || 0;
-
-                  // Update rotation based on touch movement
-                  rotation.y += deltaX * 0.5;
-                  rotation.x += deltaY * 0.5;
-
-                  globe.setAttribute('rotation', `${rotation.x} ${rotation.y} ${rotation.z}`);
-
-                  touchStartX = event.touches[0].clientX;
-                  touchStartY = event.touches[0].clientY;
-              }
-          });
-
-          scene.addEventListener('touchend', function() {
-              isDragging = false;
-              globe.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 60000; easing: linear;');
-          });
+              cursor.addEventListener('click', function(event) {
+                  const target = event.target;
+                  if (target.classList.contains('data-bar')) {
+                      const data = target.getAttribute('data-info');
+                      openInfoModal(JSON.parse(data));
+                  }
+              });
+          }
       }
 
       /**
@@ -287,9 +259,12 @@ window.onload = function() {
 
           // Country Search Filter
           if (searchTerm) {
-              const li = document.createElement('li');
-              li.innerText = `Country: ${capitalizeFirstLetter(searchTerm)}`;
-              activeFiltersList.appendChild(li);
+              const matchedCountry = data.find(d => d.country.toLowerCase() === searchTerm);
+              if (matchedCountry) {
+                  const li = document.createElement('li');
+                  li.innerText = `Country: ${matchedCountry.country}`;
+                  activeFiltersList.appendChild(li);
+              }
           }
 
           // Range Filter
@@ -329,6 +304,22 @@ window.onload = function() {
       }
 
       /**
+       * Shows a success message to the user.
+       * @param {string} message - The message to display.
+       */
+      function showSuccessMessage(message) {
+          if (!successMessage) return;
+
+          successMessage.innerText = message;
+          successMessage.style.display = 'block';
+
+          // Hide after 3 seconds
+          setTimeout(() => {
+              successMessage.style.display = 'none';
+          }, 3000);
+      }
+
+      /**
        * Updates the visualization based on current filters.
        */
       function updateVisualization() {
@@ -363,7 +354,7 @@ window.onload = function() {
           // Filter data based on all active filters
           filteredData = data.filter(d => {
               const regionMatch = currentRegion === 'All' || d.region === currentRegion;
-              const searchMatch = d.country.toLowerCase().includes(searchTerm);
+              const searchMatch = !searchTerm || d.country.toLowerCase().includes(searchTerm);
               const rangeMatch = d[currentDataType] <= rangeMaxValue;
               const validCoordinates = d.latitude != null && d.longitude != null;
               const validValue = d[currentDataType] != null && !isNaN(d[currentDataType]);
@@ -408,7 +399,7 @@ window.onload = function() {
               bar.setAttribute('height', barHeight);
               bar.setAttribute('color', barColor);
               bar.setAttribute('class', 'data-bar');
-              bar.setAttribute('data-country', d.country);
+              bar.setAttribute('data-info', JSON.stringify(d)); // Store data in attribute for event handling
 
               // Compute quaternion rotation to align the bar perpendicular to the globe's surface
               const quaternion = computeBarRotation(barPosition);
@@ -422,15 +413,6 @@ window.onload = function() {
 
               // Set the bar's position
               bar.object3D.position.copy(finalPosition);
-
-              // Add event listeners for tooltip and detailed view
-              bar.addEventListener('mouseenter', (event) => {
-                  showTooltip(event, d);
-              });
-              bar.addEventListener('mouseleave', hideTooltip);
-              bar.addEventListener('click', () => {
-                  openInfoModal(d);
-              });
 
               // Append the bar to the bars group
               barsGroup.appendChild(bar);
@@ -488,13 +470,13 @@ window.onload = function() {
       }
 
       /**
-       * Displays the tooltip with detailed information about the data bar.
-       * @param {MouseEvent} event - The mouse event triggering the tooltip.
+       * Displays the tooltip with detailed information about the data bar at a specific position.
        * @param {Object} data - The data object associated with the bar.
+       * @param {number} x - The x-coordinate for the tooltip position.
+       * @param {number} y - The y-coordinate for the tooltip position.
        */
-      function showTooltip(event, data) {
-          const tooltip = document.getElementById('tooltip');
-          tooltip.style.display = 'block';
+      function showTooltipAtPosition(data, x, y) {
+          if (!tooltip) return;
 
           const dataTypeLabels = {
               'energyConsumed': 'Energy Consumed',
@@ -509,12 +491,12 @@ window.onload = function() {
           };
 
           // Determine if current data type is per capita
-          const isPerCapita = dataTypeSelect.value.endsWith('PerCapita');
+          const isPerCapita = currentDataType.endsWith('PerCapita');
 
           // Prepare per capita value if applicable
           let perCapitaText = '';
-          if (!isPerCapita && perCapitaDataTypes[dataTypeSelect.value]) {
-              const perCapitaValue = data[perCapitaDataTypes[dataTypeSelect.value]];
+          if (!isPerCapita && perCapitaDataTypes[currentDataType]) {
+              const perCapitaValue = data[perCapitaDataTypes[currentDataType]];
               if (perCapitaValue != null) {
                   perCapitaText = `Per Capita: ${perCapitaValue.toLocaleString()}<br/>`;
               }
@@ -523,40 +505,23 @@ window.onload = function() {
           // Build the tooltip content
           tooltip.innerHTML = `
               <strong>${data.country}</strong><br/>
-              ${dataTypeLabels[dataTypeSelect.value]}: ${data[dataTypeSelect.value] != null ? data[dataTypeSelect.value].toLocaleString() : 'N/A'}<br/>
+              ${dataTypeLabels[currentDataType]}: ${data[currentDataType] != null ? data[currentDataType].toLocaleString() : 'N/A'}<br/>
               Population: ${data.population != null ? data.population.toLocaleString() : 'N/A'}<br/>
               ${perCapitaText}
           `;
+
+          // Position the tooltip
+          tooltip.style.left = `${x + 15}px`;
+          tooltip.style.top = `${y + 15}px`;
+          tooltip.style.display = 'block';
       }
 
       /**
        * Hides the tooltip.
        */
       function hideTooltip() {
-          const tooltip = document.getElementById('tooltip');
+          if (!tooltip) return;
           tooltip.style.display = 'none';
-      }
-
-      /**
-       * Updates the tooltip's position based on the cursor's movement.
-       * @param {MouseEvent} event - The mouse event triggering the tooltip position update.
-       */
-      function updateTooltipPosition(event) {
-          const tooltip = document.getElementById('tooltip');
-          const tooltipWidth = tooltip.offsetWidth;
-          const tooltipHeight = tooltip.offsetHeight;
-          const pageWidth = window.innerWidth;
-          const pageHeight = window.innerHeight;
-          let x = event.clientX + 15;
-          let y = event.clientY + 15;
-          if (x + tooltipWidth > pageWidth) {
-              x = event.clientX - tooltipWidth - 15;
-          }
-          if (y + tooltipHeight > pageHeight) {
-              y = event.clientY - tooltipHeight - 15;
-          }
-          tooltip.style.left = `${x}px`;
-          tooltip.style.top = `${y}px`;
       }
 
       /**
@@ -630,6 +595,9 @@ window.onload = function() {
 
           // Display the modal
           infoModal.style.display = 'block';
+
+          // Trap focus inside the modal for accessibility
+          trapFocus(infoModal);
       }
 
       /**
@@ -722,5 +690,54 @@ window.onload = function() {
        * Initializes the visualization by setting up event listeners and rendering the initial data.
        */
       initialize();
+  }
+
+  /**
+   * Debounce function to limit the rate at which a function can fire.
+   * @param {Function} func - The function to debounce.
+   * @param {number} delay - The delay in milliseconds.
+   * @returns {Function} - The debounced function.
+   */
+  function debounce(func, delay) {
+      let debounceTimer;
+      return function() {
+          const context = this;
+          const args = arguments;
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => func.apply(context, args), delay);
+      }
+  }
+
+  /**
+   * Traps focus inside a modal for accessibility.
+   * @param {HTMLElement} modal - The modal element.
+   */
+  function trapFocus(modal) {
+      const focusableElements = modal.querySelectorAll('a, button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      modal.addEventListener('keydown', function(e) {
+          const isTabPressed = (e.key === 'Tab' || e.keyCode === 9);
+
+          if (!isTabPressed) {
+              return;
+          }
+
+          if (e.shiftKey) { // Shift + Tab
+              if (document.activeElement === firstElement) {
+                  lastElement.focus();
+                  e.preventDefault();
+              }
+          } else { // Tab
+              if (document.activeElement === lastElement) {
+                  firstElement.focus();
+                  e.preventDefault();
+              }
+          }
+      });
+
+      // Focus the first element in the modal
+      firstElement.focus();
   }
 };

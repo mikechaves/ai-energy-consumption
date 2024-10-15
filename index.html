@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
     
-    <!-- Font Awesome CSS for Icons (Integrity Attributes Removed) -->
+    <!-- Font Awesome CSS for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     
     <!-- Custom CSS -->
@@ -236,7 +236,7 @@
             }
         }
 
-        /* Loading Spinner Styles (Optional) */
+        /* Loading Spinner Styles */
         .spinner {
             border: 8px solid #f3f3f3; /* Light grey */
             border-top: 8px solid #2E8B57; /* Green */
@@ -250,26 +250,46 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Success Message Styles */
+        #successMessage {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1004;
+            display: none;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
     <!-- Instruction Overlay -->
-    <div id="instructionOverlay" class="overlay">
+    <div id="instructionOverlay" class="overlay" role="dialog" aria-labelledby="instructionTitle" aria-describedby="instructionDesc">
         <div class="overlay-content">
-            <h2>Welcome to the AI Energy Consumption Visualization!</h2>
-            <p>Explore global energy consumption and CO₂ emissions data seamlessly.</p>
+            <h2 id="instructionTitle">Welcome to the AI Energy Consumption Visualization!</h2>
+            <p id="instructionDesc">Explore global energy consumption and CO₂ emissions data seamlessly.</p>
             <ul class="instruction-list">
                 <li><i class="fas fa-arrows-alt"></i><strong>Rotate:</strong> Use your mouse or touch to rotate the globe.</li>
                 <li><i class="fas fa-search-plus"></i><strong>Zoom:</strong> Scroll or use the zoom buttons to zoom in and out.</li>
                 <li><i class="fas fa-info-circle"></i><strong>Details:</strong> Hover over the bars to see detailed data.</li>
                 <li><i class="fas fa-filter"></i><strong>Filter:</strong> Use the controls to filter and explore different data.</li>
             </ul>
-            <button id="closeInstructionsBtn">Start Exploring</button>
+            <button id="closeInstructionsBtn" aria-label="Start Exploring">Start Exploring</button>
         </div>
     </div>
 
+    <!-- Success Message -->
+    <div id="successMessage" role="alert" aria-live="assertive">
+        Filters applied successfully!
+    </div>
+
     <!-- Active Filters Display -->
-    <div id="activeFilters">
+    <div id="activeFilters" aria-live="polite">
         <h3>Active Filters:</h3>
         <ul id="filtersList">
             <!-- Active filters will be populated here -->
@@ -279,7 +299,7 @@
     <!-- User Interface Controls -->
     <div id="controls">
         <label for="dataTypeSelect">Select Data Type:</label>
-        <select id="dataTypeSelect">
+        <select id="dataTypeSelect" aria-label="Select Data Type">
             <option value="energyConsumed">Energy Consumption</option>
             <option value="co2Emissions">CO₂ Emissions</option>
             <option value="energyPerCapita">Energy Consumption per Capita</option>
@@ -287,7 +307,7 @@
         </select>
 
         <label for="regionSelect">Filter by Region:</label>
-        <select id="regionSelect">
+        <select id="regionSelect" aria-label="Filter by Region">
             <option value="All">All Regions</option>
             <option value="Africa">Africa</option>
             <option value="Asia">Asia</option>
@@ -298,22 +318,22 @@
         </select>
 
         <label for="countrySearch">Search Country:</label>
-        <input type="text" id="countrySearch" placeholder="Type a country name..." />
+        <input type="text" id="countrySearch" placeholder="Type a country name..." aria-label="Search Country" />
 
         <label for="dataRange">Filter by Value:</label>
-        <input type="range" id="dataRange" min="0" max="100" value="100" step="1">
+        <input type="range" id="dataRange" min="0" max="100" value="100" step="1" aria-label="Filter by Value">
         <span id="dataRangeValue">100% (5,000,000)</span>
 
-        <button id="zoomInBtn"><i class="fas fa-search-plus"></i> Zoom In</button>
-        <button id="zoomOutBtn"><i class="fas fa-search-minus"></i> Zoom Out</button>
-        <button id="resetViewBtn"><i class="fas fa-sync-alt"></i> Reset View</button>
+        <button id="zoomInBtn" aria-label="Zoom In"><i class="fas fa-search-plus"></i> Zoom In</button>
+        <button id="zoomOutBtn" aria-label="Zoom Out"><i class="fas fa-search-minus"></i> Zoom Out</button>
+        <button id="resetViewBtn" aria-label="Reset View"><i class="fas fa-sync-alt"></i> Reset View</button>
     </div>
 
     <!-- Legend -->
-    <canvas id="legendCanvas" width="200" height="40"></canvas>
+    <canvas id="legendCanvas" width="200" height="40" aria-label="Color Legend"></canvas>
 
     <!-- Tooltip -->
-    <div id="tooltip"></div>
+    <div id="tooltip" role="tooltip"></div>
 
     <!-- Detailed Info Modal -->
     <div id="infoModal" class="modal" role="dialog" aria-labelledby="modalCountryName" aria-modal="true">
@@ -325,7 +345,7 @@
                 <p><strong>Energy Consumed:</strong> <span id="modalEnergyConsumed"></span></p>
                 <p><strong>CO₂ Emissions:</strong> <span id="modalCO2Emissions"></span></p>
                 <p><strong>Population:</strong> <span id="modalPopulation"></span></p>
-                <canvas id="historicalChart" width="400" height="200"></canvas>
+                <canvas id="historicalChart" width="400" height="200" aria-label="Historical Data Chart"></canvas>
             </div>
         </div>
     </div>
@@ -350,12 +370,21 @@
 
         <!-- Camera Rig for Zoom and Rotation -->
         <a-entity id="cameraRig" position="0 0 10">
-            <a-camera position="0 0 0" look-controls wasd-controls="enabled: true"></a-camera>
+            <a-camera position="0 0 0" look-controls wasd-controls="enabled: true">
+                <!-- Cursor for Interactions -->
+                <a-cursor 
+                    id="cursor"
+                    fuse="false"
+                    raycaster="objects: .data-bar"
+                    cursor="fuse: false"
+                    raycaster="showLine: false">
+                </a-cursor>
+            </a-camera>
         </a-entity>
     </a-scene>
 
     <!-- Loading Spinner (Optional) -->
-    <div id="loadingSpinner" class="overlay">
+    <div id="loadingSpinner" class="overlay" aria-hidden="true">
         <div class="spinner"></div>
     </div>
 
