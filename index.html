@@ -8,49 +8,130 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <!-- Include D3.js -->
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <!-- Include A-Frame Stars Component -->
-    <script src="https://unpkg.com/aframe-stars-component/dist/aframe-stars-component.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
         /* Styles for UI controls */
         #controls {
             position: absolute;
             top: 10px;
             left: 10px;
             z-index: 999;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
             border-radius: 5px;
+            width: 220px;
         }
         #controls label {
-            margin-right: 5px;
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
-        #controls select {
+        #controls select, #controls input, #controls button {
+            width: 100%;
             margin-bottom: 10px;
+            padding: 5px;
+            font-size: 14px;
+        }
+        #controls button {
+            cursor: pointer;
         }
         /* Styles for the tooltip */
         #tooltip {
             position: absolute;
             display: none;
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.75);
+            padding: 10px;
+            background: rgba(50, 50, 50, 0.85);
             color: #fff;
             border-radius: 4px;
             pointer-events: none;
             z-index: 1000;
+            font-size: 14px;
+            max-width: 250px;
+            line-height: 1.4;
+        }
+        /* Styles for the instruction overlay */
+        #instructionOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1001;
+        }
+        #instructionOverlay p {
+            max-width: 600px;
+            text-align: center;
+            margin: 20px;
+            font-size: 18px;
+        }
+        #instructionOverlay button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        /* Styles for the info panel */
+        #infoPanel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 5px;
+            width: 300px;
+            z-index: 999;
+        }
+        #infoPanel h2 {
+            margin-top: 0;
+        }
+        #infoPanel p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        #infoPanel a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        #infoPanel a:hover {
+            text-decoration: underline;
+        }
+        /* Legend styles */
+        #legendCanvas {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 999;
+            border: 1px solid #ccc;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
+    <!-- Instruction Overlay -->
+    <div id="instructionOverlay">
+        <p>Welcome to the AI Energy Consumption Visualization!<br>
+           Use your mouse or touch to rotate the globe.<br>
+           Scroll or use the zoom buttons to zoom in and out.<br>
+           Hover over the bars to see detailed data.<br>
+           Use the controls to filter and explore different data.</p>
+        <button id="closeInstructionsBtn">Start Exploring</button>
+    </div>
     <!-- User Interface Controls -->
     <div id="controls">
-        <!-- Your existing controls -->
-        <label for="dataTypeSelect">Data Type:</label>
+        <label for="dataTypeSelect">Select Data Type:</label>
         <select id="dataTypeSelect">
             <option value="energyConsumed">Energy Consumption</option>
             <option value="co2Emissions">CO₂ Emissions</option>
-        </select><br/>
-        <label for="regionSelect">Region:</label>
+            <option value="energyPerCapita">Energy Consumption per Capita</option>
+            <option value="co2PerCapita">CO₂ Emissions per Capita</option>
+        </select>
+        <label for="regionSelect">Filter by Region:</label>
         <select id="regionSelect">
             <option value="All">All Regions</option>
             <option value="Africa">Africa</option>
@@ -60,9 +141,26 @@
             <option value="South America">South America</option>
             <option value="Oceania">Oceania</option>
         </select>
+        <label for="countrySearch">Search Country:</label>
+        <input type="text" id="countrySearch" placeholder="Type a country name..." />
+        <button id="resetViewBtn">Reset View</button>
+        <button id="zoomInBtn">Zoom In</button>
+        <button id="zoomOutBtn">Zoom Out</button>
     </div>
     <!-- Tooltip for displaying data details -->
     <div id="tooltip"></div>
+    <!-- Information Panel -->
+    <div id="infoPanel">
+        <h2>AI Energy Consumption</h2>
+        <p>This visualization shows the impact of AI technologies on global energy consumption and CO₂ emissions. Explore the data by rotating the globe and interacting with the bars representing each country's data.</p>
+        <p>Learn more about AI's environmental impact and sustainability efforts:</p>
+        <ul>
+            <li><a href="https://www.iea.org/reports/data-centres-and-data-transmission-networks" target="_blank">IEA: Data Centres and Data Transmission Networks</a></li>
+            <li><a href="https://ourworldindata.org/co2-emissions" target="_blank">Our World in Data: CO₂ Emissions</a></li>
+        </ul>
+    </div>
+    <!-- Legend Canvas -->
+    <canvas id="legendCanvas" width="200" height="50"></canvas>
     <!-- A-Frame Scene -->
     <a-scene background="color: black">
         <!-- Preload Assets -->
@@ -74,19 +172,20 @@
         <!-- Sky with Starfield Texture -->
         <a-sky src="#starfieldTexture"></a-sky>
 
-        <!-- Sky Background -->
-        <!-- <a-sky color="#000000"></a-sky> -->
-
-        <!-- Starfield -->
-        <!-- <a-entity stars="count: 5000; depth: 1000; size: 1; color: #FFFFFF"></a-entity> -->
-
         <!-- Rotating Globe with Earth Texture -->
-        <a-entity id="globe" rotation="0 0 0">
-            <a-sphere radius="3" position="0 2 -10" src="#earthTexture"></a-sphere>
+        <a-entity id="globe" position="0 0 0" rotation="0 0 0">
+            <a-sphere radius="3" src="#earthTexture"></a-sphere>
+            <!-- Atmospheric Glow -->
+            <a-sphere radius="3.05" material="color: #87CEFA; transparent: true; opacity: 0.2;"></a-sphere>
         </a-entity>
 
+        <!-- Ambient Light -->
+        <a-entity light="type: ambient; color: #888;"></a-entity>
+        <!-- Directional Light -->
+        <a-entity light="type: directional; color: #fff; intensity: 0.5;" position="-1 1 1"></a-entity>
+
         <!-- Camera with Look Controls and WASD Controls -->
-        <a-entity id="cameraRig" position="0 2 5">
+        <a-entity id="cameraRig" position="0 0 10">
             <a-entity camera look-controls wasd-controls></a-entity>
         </a-entity>
 
