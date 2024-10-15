@@ -62,16 +62,24 @@
     <div id="tooltip"></div>
     <!-- A-Frame Scene -->
     <a-scene>
+        <!-- Preload Assets -->
+        <a-assets>
+            <img id="earthTexture" src="assets/earth_texture.jpg" crossorigin="anonymous" />
+        </a-assets>
+
         <!-- Sky Background -->
         <a-sky color="#c8f7f0"></a-sky>
-        <!-- Rotating Globe -->
+
+        <!-- Rotating Globe with Earth Texture -->
         <a-entity id="globe" rotation="0 0 0">
-            <a-sphere radius="3" color="#6b93d6" position="0 2 -10"></a-sphere>
+            <a-sphere radius="3" position="0 2 -10" src="#earthTexture"></a-sphere>
         </a-entity>
+
         <!-- Camera with Look Controls and WASD Controls -->
         <a-entity id="cameraRig" position="0 2 5">
             <a-entity camera look-controls wasd-controls></a-entity>
         </a-entity>
+
         <!-- Cursor Entity for Mouse Events -->
         <a-entity cursor="rayOrigin: mouse"></a-entity>
     </a-scene>
