@@ -112,7 +112,7 @@ ai-energy-consumption/
 │   └── ai_energy_consumption_prototype.js
 ├── ai_energy_consumption_data.json
 ├── assets/
-│   └── (optional assets like images or models)
+│   └── earth_texture.jpg
 ├── css/
 │   └── (optional custom stylesheets)
 └── README.md
