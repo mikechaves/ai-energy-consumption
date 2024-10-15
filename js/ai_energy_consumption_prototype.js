@@ -31,7 +31,11 @@ function initVisualization(data) {
 
   // Define globe parameters
   const globeRadius = 3;
-  const globeCenter = new THREE.Vector3(0, 2, -10); // Use THREE.Vector3 for calculations
+  const globeCenter = new AFRAME.THREE.Vector3(0, 2, -10); // Use AFRAME.THREE.Vector3
+
+  // Variables for globe rotation
+  let isDragging = false;
+  let previousMousePosition = { x: 0, y: 0 };
 
   // Add event listeners for UI controls
   dataTypeSelect.addEventListener('change', function() {
@@ -42,6 +46,50 @@ function initVisualization(data) {
   regionSelect.addEventListener('change', function() {
     currentRegion = this.value;
     updateVisualization();
+  });
+
+  // Add event listeners for mouse dragging to rotate the globe
+  scene.addEventListener('mousedown', function(event) {
+    isDragging = true;
+    previousMousePosition = {
+      x: event.screenX,
+      y: event.screenY
+    };
+  });
+
+  scene.addEventListener('mousemove', function(event) {
+    if (isDragging) {
+      const deltaX = event.screenX - previousMousePosition.x;
+      const deltaY = event.screenY - previousMousePosition.y;
+
+      const rotation = globe.getAttribute('rotation');
+      rotation.y += deltaX * 0.1; // Adjust sensitivity as needed
+      rotation.x -= deltaY * 0.1;
+
+      // Limit the x rotation to prevent flipping
+      rotation.x = Math.max(-90, Math.min(90, rotation.x));
+
+      globe.setAttribute('rotation', rotation);
+
+      previousMousePosition = {
+        x: event.screenX,
+        y: event.screenY
+      };
+    }
+  });
+
+  scene.addEventListener('mouseup', function() {
+    isDragging = false;
+  });
+
+  scene.addEventListener('mouseleave', function() {
+    isDragging = false;
+  });
+
+  // Update the tooltip position based on mouse movement over the scene
+  scene.addEventListener('mousemove', (event) => {
+    tooltip.style.left = (event.clientX + 15) + 'px';
+    tooltip.style.top = (event.clientY + 15) + 'px';
   });
 
   // Initialize the visualization
@@ -85,14 +133,14 @@ function initVisualization(data) {
       bar.setAttribute('height', barHeight);
       bar.setAttribute('segments-radial', 6); // Reduce segments for performance
       bar.setAttribute('position', barPosition.add(globeCenter).toArray().join(' '));
-      bar.setAttribute('rotation', computeBarRotation(coords).toArray().join(' '));
+      bar.setAttribute('rotation', computeBarRotation(coords).toArray().map(radToDeg).join(' '));
       bar.setAttribute('color', colorScale(d[currentDataType]));
 
       // Add event listeners for interactive tooltip
-      bar.addEventListener('mouseenter', (event) => {
+      bar.addEventListener('raycaster-intersected', (event) => {
         showTooltip(event, d);
       });
-      bar.addEventListener('mouseleave', hideTooltip);
+      bar.addEventListener('raycaster-intersected-cleared', hideTooltip);
 
       // Append the bar to the globe entity
       globe.appendChild(bar);
@@ -100,11 +148,11 @@ function initVisualization(data) {
   }
 
   /**
-   * Converts latitude and longitude to a THREE.Vector3.
+   * Converts latitude and longitude to an AFRAME.THREE.Vector3.
    * @param {number} lat - The latitude in degrees.
    * @param {number} lon - The longitude in degrees.
    * @param {number} radius - The radius of the globe.
-   * @returns {THREE.Vector3} The 3D coordinate on the globe's surface.
+   * @returns {AFRAME.THREE.Vector3} The 3D coordinate on the globe's surface.
    */
   function latLongToVector3(lat, lon, radius) {
     const phi = (90 - lat) * (Math.PI / 180);
@@ -114,27 +162,36 @@ function initVisualization(data) {
     const z = radius * Math.sin(phi) * Math.sin(theta);
     const y = radius * Math.cos(phi);
 
-    return new THREE.Vector3(x, y, z);
+    return new AFRAME.THREE.Vector3(x, y, z);
   }
 
   /**
    * Computes the rotation needed to align the bar perpendicular to the globe's surface.
-   * @param {THREE.Vector3} vector - The vector pointing from the globe's center to the surface point.
-   * @returns {THREE.Euler} The rotation in Euler angles.
+   * @param {AFRAME.THREE.Vector3} vector - The vector pointing from the globe's center to the surface point.
+   * @returns {AFRAME.THREE.Euler} The rotation in Euler angles.
    */
   function computeBarRotation(vector) {
-    const up = new THREE.Vector3(0, 1, 0);
-    const axis = new THREE.Vector3().crossVectors(up, vector).normalize();
+    const up = new AFRAME.THREE.Vector3(0, 1, 0);
+    const axis = new AFRAME.THREE.Vector3().crossVectors(up, vector).normalize();
     const angle = Math.acos(up.clone().dot(vector.clone().normalize()));
-    const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
-    const euler = new THREE.Euler().setFromQuaternion(quaternion, 'XYZ');
+    const quaternion = new AFRAME.THREE.Quaternion().setFromAxisAngle(axis, angle);
+    const euler = new AFRAME.THREE.Euler().setFromQuaternion(quaternion, 'YXZ');
 
     return euler;
   }
 
   /**
+   * Converts radians to degrees.
+   * @param {number} radians - The angle in radians.
+   * @returns {number} The angle in degrees.
+   */
+  function radToDeg(radians) {
+    return radians * (180 / Math.PI);
+  }
+
+  /**
    * Displays the tooltip with the data details at the cursor's position.
-   * @param {Event} event - The mouseenter event.
+   * @param {Event} event - The event object.
    * @param {Object} data - The data object for the hovered country.
    */
   function showTooltip(event, data) {
@@ -151,12 +208,4 @@ function initVisualization(data) {
   function hideTooltip() {
     tooltip.style.display = 'none';
   }
-
-  /**
-   * Updates the tooltip's position based on mouse movement.
-   */
-  window.addEventListener('mousemove', (event) => {
-    tooltip.style.left = (event.clientX + 15) + 'px';
-    tooltip.style.top = (event.clientY + 15) + 'px';
-  });
 }

@@ -8,8 +8,6 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <!-- Include D3.js -->
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <!-- Include A-Frame Extras for Orbit Controls -->
-    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; }
         /* Styles for UI controls */
@@ -47,7 +45,7 @@
         <label for="dataTypeSelect">Data Type:</label>
         <select id="dataTypeSelect">
             <option value="energyConsumed">Energy Consumption</option>
-            <option value="co2Emissions">CO2 Emissions</option>
+            <option value="co2Emissions">CO₂ Emissions</option>
         </select><br/>
         <label for="regionSelect">Region:</label>
         <select id="regionSelect">
@@ -70,16 +68,12 @@
         <a-entity id="globe" rotation="0 0 0">
             <a-sphere radius="3" color="#6b93d6" position="0 2 -10"></a-sphere>
         </a-entity>
-        <!-- Camera with Orbit Controls -->
+        <!-- Camera with Look Controls and WASD Controls -->
         <a-entity id="cameraRig" position="0 2 5">
-            <a-entity camera look-controls orbit-controls="
-                target: #globe;
-                enableDamping: true;
-                dampingFactor: 0.1;
-                rotateSpeed:0.3;
-                autoRotate: false;">
-            </a-entity>
+            <a-entity camera look-controls wasd-controls></a-entity>
         </a-entity>
+        <!-- Cursor Entity for Mouse Events -->
+        <a-entity cursor="rayOrigin: mouse"></a-entity>
     </a-scene>
     <!-- Include the JavaScript file -->
     <script src="js/ai_energy_consumption_prototype.js"></script>
