@@ -11,10 +11,6 @@ fetch('ai_energy_consumption_data.json')
     console.error('Error fetching data:', error);
   });
 
-/**
- * Initializes the visualization with the given data.
- * @param {Array} data - The array of country data objects.
- */
 function initVisualization(data) {
   // Global variables for data and state management
   let currentDataType = 'energyConsumed'; // 'energyConsumed' or 'co2Emissions'
@@ -36,6 +32,9 @@ function initVisualization(data) {
   // Variables for globe rotation
   let isDragging = false;
   let previousMousePosition = { x: 0, y: 0 };
+
+  // Declare legend elements
+  let legend, legendCanvas, legendContext, texture, minLabel, maxLabel, legendTitle;
 
   // Add event listeners for UI controls
   dataTypeSelect.addEventListener('change', function() {
@@ -92,12 +91,63 @@ function initVisualization(data) {
     tooltip.style.top = (event.clientY + 15) + 'px';
   });
 
+  // Create the legend elements
+  // Create a plane for the legend background
+  legend = document.createElement('a-plane');
+  legend.setAttribute('position', '0 0.5 -4');
+  legend.setAttribute('width', '2');
+  legend.setAttribute('height', '0.2');
+  legend.setAttribute('material', 'shader: flat; side: double; opacity: 0.8');
+  scene.appendChild(legend);
+
+  // Create a canvas to draw the color gradient
+  legendCanvas = document.createElement('canvas');
+  legendCanvas.width = 256;
+  legendCanvas.height = 32;
+  legendContext = legendCanvas.getContext('2d');
+
+  // Create a texture from the canvas
+  texture = new AFRAME.THREE.CanvasTexture(legendCanvas);
+
+  // Wait for the legend entity to be fully loaded
+  legend.addEventListener('loaded', function () {
+    // Access the mesh material and set the texture
+    const mesh = legend.getObject3D('mesh');
+    if (mesh) {
+      mesh.material.map = texture;
+      mesh.material.needsUpdate = true;
+    }
+  });
+
+  // Add labels to the legend
+  minLabel = document.createElement('a-text');
+  minLabel.setAttribute('value', '');
+  minLabel.setAttribute('position', '-1 0.7 -4');
+  minLabel.setAttribute('align', 'left');
+  minLabel.setAttribute('color', '#000000');
+  minLabel.setAttribute('width', 2);
+  scene.appendChild(minLabel);
+
+  maxLabel = document.createElement('a-text');
+  maxLabel.setAttribute('value', '');
+  maxLabel.setAttribute('position', '1 0.7 -4');
+  maxLabel.setAttribute('align', 'right');
+  maxLabel.setAttribute('color', '#000000');
+  maxLabel.setAttribute('width', 2);
+  scene.appendChild(maxLabel);
+
+  // Add a title to the legend
+  legendTitle = document.createElement('a-text');
+  legendTitle.setAttribute('value', '');
+  legendTitle.setAttribute('position', '0 0.9 -4');
+  legendTitle.setAttribute('align', 'center');
+  legendTitle.setAttribute('color', '#000000');
+  legendTitle.setAttribute('width', 4);
+  scene.appendChild(legendTitle);
+
   // Initialize the visualization
   updateVisualization();
 
-  /**
-   * Updates the visualization based on current filters and data type.
-   */
   function updateVisualization() {
     // Filter data based on selected region
     if (currentRegion === 'All') {
@@ -114,6 +164,25 @@ function initVisualization(data) {
     const maxValue = d3.max(filteredData, d => d[currentDataType]);
     const colorScale = d3.scaleSequential(d3.interpolateViridis)
       .domain([0, maxValue]);
+
+    // Update the legend gradient
+    const legendGradient = legendContext.createLinearGradient(0, 0, legendCanvas.width, 0);
+
+    for (let i = 0; i <= 1; i += 0.01) {
+      legendGradient.addColorStop(i, colorScale(i * maxValue));
+    }
+
+    legendContext.fillStyle = legendGradient;
+    legendContext.fillRect(0, 0, legendCanvas.width, legendCanvas.height);
+    texture.needsUpdate = true;
+
+    // Update the legend labels with actual data values
+    const minDataValue = d3.min(filteredData, d => d[currentDataType]);
+    const maxDataValue = d3.max(filteredData, d => d[currentDataType]);
+
+    minLabel.setAttribute('value', 'Low: ' + minDataValue.toLocaleString());
+    maxLabel.setAttribute('value', 'High: ' + maxDataValue.toLocaleString());
+    legendTitle.setAttribute('value', currentDataType === 'energyConsumed' ? 'Energy Consumption (kWh)' : 'CO₂ Emissions (tons)');
 
     // Loop through each data point and create visualization elements
     filteredData.forEach(d => {
@@ -147,12 +216,10 @@ function initVisualization(data) {
     });
   }
 
+  // The rest of your helper functions remain unchanged
+
   /**
    * Converts latitude and longitude to an AFRAME.THREE.Vector3.
-   * @param {number} lat - The latitude in degrees.
-   * @param {number} lon - The longitude in degrees.
-   * @param {number} radius - The radius of the globe.
-   * @returns {AFRAME.THREE.Vector3} The 3D coordinate on the globe's surface.
    */
   function latLongToVector3(lat, lon, radius) {
     const phi = (90 - lat) * (Math.PI / 180);
@@ -167,8 +234,6 @@ function initVisualization(data) {
 
   /**
    * Computes the rotation needed to align the bar perpendicular to the globe's surface.
-   * @param {AFRAME.THREE.Vector3} vector - The vector pointing from the globe's center to the surface point.
-   * @returns {AFRAME.THREE.Euler} The rotation in Euler angles.
    */
   function computeBarRotation(vector) {
     const up = new AFRAME.THREE.Vector3(0, 1, 0);
@@ -182,8 +247,6 @@ function initVisualization(data) {
 
   /**
    * Converts radians to degrees.
-   * @param {number} radians - The angle in radians.
-   * @returns {number} The angle in degrees.
    */
   function radToDeg(radians) {
     return radians * (180 / Math.PI);
@@ -191,8 +254,6 @@ function initVisualization(data) {
 
   /**
    * Displays the tooltip with the data details at the cursor's position.
-   * @param {Event} event - The event object.
-   * @param {Object} data - The data object for the hovered country.
    */
   function showTooltip(event, data) {
     tooltip.style.display = 'block';
