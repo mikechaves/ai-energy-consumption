@@ -2,18 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Energy Consumption Visualization</title>
-    <style>
-        body { margin: 0; }
-        canvas { display: block; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Include A-Frame -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <!-- Include D3.js -->
-    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- Include A-Frame Extras for Orbit Controls -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        /* Styles for UI controls */
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #controls label {
+            margin-right: 5px;
+        }
+        #controls select {
+            margin-bottom: 10px;
+        }
+        /* Styles for the tooltip */
+        #tooltip {
+            position: absolute;
+            display: none;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
-    <script type="module" src="/js/ai_energy_consumption_prototype.js"></script>
+    <!-- User Interface Controls -->
+    <div id="controls">
+        <label for="dataTypeSelect">Data Type:</label>
+        <select id="dataTypeSelect">
+            <option value="energyConsumed">Energy Consumption</option>
+            <option value="co2Emissions">CO2 Emissions</option>
+        </select><br/>
+        <label for="regionSelect">Region:</label>
+        <select id="regionSelect">
+            <option value="All">All Regions</option>
+            <option value="Africa">Africa</option>
+            <option value="Asia">Asia</option>
+            <option value="Europe">Europe</option>
+            <option value="North America">North America</option>
+            <option value="South America">South America</option>
+            <option value="Oceania">Oceania</option>
+        </select>
+    </div>
+    <!-- Tooltip for displaying data details -->
+    <div id="tooltip"></div>
+    <!-- A-Frame Scene -->
+    <a-scene>
+        <!-- Sky Background -->
+        <a-sky color="#c8f7f0"></a-sky>
+        <!-- Rotating Globe -->
+        <a-entity id="globe" rotation="0 0 0">
+            <a-sphere radius="3" color="#6b93d6" position="0 2 -10"></a-sphere>
+        </a-entity>
+        <!-- Camera with Orbit Controls -->
+        <a-entity id="cameraRig" position="0 2 5">
+            <a-entity camera look-controls orbit-controls="
+                target: #globe;
+                enableDamping: true;
+                dampingFactor: 0.1;
+                rotateSpeed:0.3;
+                autoRotate: false;">
+            </a-entity>
+        </a-entity>
+    </a-scene>
+    <!-- Include the JavaScript file -->
+    <script src="js/ai_energy_consumption_prototype.js"></script>
 </body>
 </html>
