@@ -246,32 +246,46 @@
             cursor: pointer;
         }
 
-        /* Active Filters Display */
-        #activeFilters {
+        /* Informational Panel */
+        #infoPanel {
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             padding: 15px;
             border-radius: 8px;
             z-index: 1001;
             width: 300px;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
-        #activeFilters h3 {
+        #infoPanel h3 {
             margin-bottom: 10px;
+            color: #2E8B57;
         }
 
-        #activeFilters ul {
+        #infoPanel p {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        #infoPanel ul {
             list-style-type: disc;
             padding-left: 20px;
         }
 
+        #infoPanel ul li {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
-            #controls, #activeFilters, #legendContainer {
+            #controls, #infoPanel, #legendContainer {
                 width: 90%;
                 left: 5%;
                 right: 5%;
@@ -334,11 +348,17 @@
         Filters applied successfully!
     </div>
 
-    <!-- Active Filters Display -->
-    <div id="activeFilters" aria-live="polite">
-        <h3>Active Filters:</h3>
-        <ul id="filtersList">
-            <!-- Active filters will be populated here -->
+    <!-- Informational Panel -->
+    <div id="infoPanel" aria-live="polite">
+        <h3>AI Energy Consumption</h3>
+        <p>
+            This visualization shows the impact of AI technologies on global energy consumption and CO₂ emissions.
+            Explore the data by rotating the globe and interacting with the bars representing each country's data.
+            Learn more about AI's environmental impact and sustainability efforts:
+        </p>
+        <ul>
+            <li><a href="https://www.iea.org/reports/data-centres-and-data-transmission-networks" target="_blank" rel="noopener noreferrer">IEA: Data Centres and Data Transmission Networks</a></li>
+            <li><a href="https://ourworldindata.org/co2-emissions" target="_blank" rel="noopener noreferrer">Our World in Data: CO₂ Emissions</a></li>
         </ul>
     </div>
 

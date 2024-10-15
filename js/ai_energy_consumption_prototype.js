@@ -40,7 +40,6 @@ window.onload = function() {
       const zoomInBtn = document.getElementById('zoomInBtn');
       const zoomOutBtn = document.getElementById('zoomOutBtn');
       const resetViewBtn = document.getElementById('resetViewBtn');
-      const instructionOverlay = document.getElementById('instructionOverlay');
       const closeInstructionsBtn = document.getElementById('closeInstructionsBtn');
       const infoModal = document.getElementById('infoModal');
       const closeModal = document.getElementById('closeModal');
@@ -49,7 +48,6 @@ window.onload = function() {
       const modalCO2Emissions = document.getElementById('modalCO2Emissions');
       const modalPopulation = document.getElementById('modalPopulation');
       const historicalChartCtx = document.getElementById('historicalChart').getContext('2d');
-      const activeFiltersList = document.getElementById('filtersList');
       const successMessage = document.getElementById('successMessage');
 
       let historicalChart; // To store the Chart.js instance
@@ -258,42 +256,8 @@ window.onload = function() {
 
       /**
        * Updates the active filters display.
+       * (Removed since the Active Filters panel has been repurposed)
        */
-      function updateActiveFilters() {
-          if (!activeFiltersList) return; // Exit if the element doesn't exist
-
-          activeFiltersList.innerHTML = ''; // Clear existing filters
-
-          // Data Type Filter
-          if (currentDataType) {
-              const li = document.createElement('li');
-              li.innerText = `Data Type: ${formatDataType(currentDataType)}`;
-              activeFiltersList.appendChild(li);
-          }
-
-          // Region Filter
-          if (currentRegion && currentRegion !== 'All') {
-              const li = document.createElement('li');
-              li.innerText = `Region: ${currentRegion}`;
-              activeFiltersList.appendChild(li);
-          }
-
-          // Country Search Filter
-          if (searchTerm) {
-              const matchedCountry = data.find(d => d.country.toLowerCase() === searchTerm);
-              if (matchedCountry) {
-                  const li = document.createElement('li');
-                  li.innerText = `Country: ${matchedCountry.country}`;
-                  activeFiltersList.appendChild(li);
-              }
-          }
-
-          // Range Filter
-          const rangeMaxValue = maxValue * rangePercentage;
-          const liRange = document.createElement('li');
-          liRange.innerText = `Value ≤ ${Math.round(rangeMaxValue).toLocaleString()}`;
-          activeFiltersList.appendChild(liRange);
-      }
 
       /**
        * Formats the data type string for display.
@@ -393,7 +357,6 @@ window.onload = function() {
 
           createBars(updatedColorScale); // Pass updatedColorScale to createBars
           updateLegend(displayMaxValue, updatedColorScale);
-          updateActiveFilters();
           positionAllTooltipsThrottled(); // Position tooltips after creating bars
       }
 
