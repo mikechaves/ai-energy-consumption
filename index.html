@@ -8,6 +8,8 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <!-- Include D3.js -->
     <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- Include A-Frame Stars Component -->
+    <script src="https://unpkg.com/aframe-stars-component/dist/aframe-stars-component.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; }
         /* Styles for UI controls */
@@ -42,6 +44,7 @@
 <body>
     <!-- User Interface Controls -->
     <div id="controls">
+        <!-- Your existing controls -->
         <label for="dataTypeSelect">Data Type:</label>
         <select id="dataTypeSelect">
             <option value="energyConsumed">Energy Consumption</option>
@@ -61,14 +64,21 @@
     <!-- Tooltip for displaying data details -->
     <div id="tooltip"></div>
     <!-- A-Frame Scene -->
-    <a-scene>
+    <a-scene background="color: black">
         <!-- Preload Assets -->
         <a-assets>
             <img id="earthTexture" src="assets/earth_texture.jpg" crossorigin="anonymous" />
+            <img id="starfieldTexture" src="assets/starfield_texture.jpg" crossorigin="anonymous" />
         </a-assets>
 
+        <!-- Sky with Starfield Texture -->
+        <a-sky src="#starfieldTexture"></a-sky>
+
         <!-- Sky Background -->
-        <a-sky color="#c8f7f0"></a-sky>
+        <!-- <a-sky color="#000000"></a-sky> -->
+
+        <!-- Starfield -->
+        <!-- <a-entity stars="count: 5000; depth: 1000; size: 1; color: #FFFFFF"></a-entity> -->
 
         <!-- Rotating Globe with Earth Texture -->
         <a-entity id="globe" rotation="0 0 0">

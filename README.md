@@ -106,13 +106,14 @@ To expand the dataset:
 
 Project Structure
 
-ai-energy-consumption/
+ai-energy-visualization/
 ├── index.html
 ├── js/
 │   └── ai_energy_consumption_prototype.js
 ├── ai_energy_consumption_data.json
 ├── assets/
-│   └── earth_texture.jpg
+│   ├── earth_texture.jpg
+│   └── starfield_texture.jpg
 ├── css/
 │   └── (optional custom stylesheets)
 └── README.md
