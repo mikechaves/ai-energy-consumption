@@ -87,23 +87,27 @@
             bottom: 10px;
             left: 10px;
             width: 200px;
-            height: 40px;
             z-index: 1001;
             display: flex;
-            align-items: center;
+            flex-direction: column; /* Stack elements vertically */
+            align-items: center;    /* Center align horizontally */
         }
 
         #legendCanvas {
-            flex: 1;
+            width: 100%;
             height: 20px;
         }
 
-        /* Legend Labels */
+        .legend-labels {
+            width: 100%;
+            display: flex;
+            justify-content: space-between; /* Distribute labels evenly */
+            margin-top: 5px;                /* Space between gradient and labels */
+        }
+
         .legend-label {
             color: white; /* White text for visibility */
             font-size: 12px;
-            margin-left: 5px;
-            margin-right: 5px;
         }
 
         /* Tooltip Styles */
@@ -374,8 +378,10 @@
     <!-- Legend -->
     <div id="legendContainer">
         <canvas id="legendCanvas" width="200" height="20" aria-label="Color Legend"></canvas>
-        <div class="legend-label left">0</div>
-        <div class="legend-label right">5,000,000</div>
+        <div class="legend-labels">
+            <span id="legendMin" class="legend-label">0</span>
+            <span id="legendMax" class="legend-label">5,000,000</span>
+        </div>
     </div>
 
     <!-- Tooltip for Hover Interactions -->

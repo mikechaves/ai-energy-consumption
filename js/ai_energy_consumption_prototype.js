@@ -768,9 +768,16 @@ window.onload = function() {
 
           // Fill rectangle with gradient
           context.fillStyle = gradient;
-          context.fillRect(0, 0, canvas.width, 20);
+          context.fillRect(0, 0, canvas.width, canvas.height);
 
-          // Legend labels are handled via separate divs with white text
+          // Update legend labels dynamically
+          const legendMin = document.getElementById('legendMin');
+          const legendMax = document.getElementById('legendMax');
+
+          if (legendMin && legendMax) {
+              legendMin.innerText = '0';
+              legendMax.innerText = `${Math.round(maxValue).toLocaleString()}`;
+          }
       }
 
       /**
