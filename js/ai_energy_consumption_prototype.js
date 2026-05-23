@@ -83,6 +83,7 @@ window.onload = function() {
         let historicalChart;
         let lastTooltipUpdate = 0;
         let tooltipLoopStarted = false;
+        let activeBars = [];
         const tooltipUpdateInterval = 100;
 
         renderProvenance();
@@ -205,16 +206,19 @@ window.onload = function() {
         function updateVisualization() {
             const rangePercentage = Math.max(Number(dataRange.value) / 100, 0.01);
             const rangeMaxValue = maxValue * rangePercentage;
+            const regionValue = regionSelect.value;
+            const searchTerm = countrySearch.value.toLowerCase();
             dataRangeValue.innerText = `${dataRange.value}% (${formatCompactValue(rangeMaxValue, currentDataType)})`;
 
             filteredData = data.filter(d => {
-                const regionMatch = regionSelect.value === 'All' || d.region === regionSelect.value;
-                const searchMatch = !countrySearch.value || d.country.toLowerCase().includes(countrySearch.value.toLowerCase());
-                const value = d[currentDataType];
+                const value = Number(d[currentDataType]);
+                if (!Number.isFinite(value)) return false;
+
+                const regionMatch = regionValue === 'All' || d.region === regionValue;
+                const searchMatch = !searchTerm || d.country.toLowerCase().includes(searchTerm);
                 const rangeMatch = value <= rangeMaxValue;
                 const validCoordinates = d.latitude != null && d.longitude != null;
-                const validValue = value != null && Number.isFinite(Number(value));
-                return regionMatch && searchMatch && rangeMatch && validCoordinates && validValue;
+                return regionMatch && searchMatch && rangeMatch && validCoordinates;
             });
 
             displayMaxValue = d3.max(filteredData, d => d[currentDataType]) || 1;
@@ -227,12 +231,13 @@ window.onload = function() {
         }
 
         function createBars(colorScale) {
-            document.querySelectorAll('.data-bar').forEach(bar => {
+            activeBars.forEach(bar => {
                 if (bar.tooltipLabel) {
                     bar.tooltipLabel.remove();
                 }
                 bar.remove();
             });
+            activeBars = [];
 
             filteredData.forEach(dataItem => {
                 const value = Number(dataItem[currentDataType]);
@@ -264,6 +269,7 @@ window.onload = function() {
                 bar.addEventListener('click', () => openInfoModal(dataItem));
 
                 globe.appendChild(bar);
+                activeBars.push(bar);
                 createTooltipLabel(dataItem, bar);
             });
         }
@@ -283,7 +289,7 @@ window.onload = function() {
         function positionAllTooltips() {
             if (!scene.camera) return;
 
-            document.querySelectorAll('.data-bar').forEach(barElement => {
+            activeBars.forEach(barElement => {
                 if (!barElement.tooltipLabel) return;
 
                 const barPosition = new THREE.Vector3();
@@ -455,7 +461,7 @@ window.onload = function() {
         function adjustLOD() {
             const cameraPosition = cameraRig.getAttribute('position');
             const showBars = Number(cameraPosition.z) <= 15;
-            document.querySelectorAll('.data-bar').forEach(bar => {
+            activeBars.forEach(bar => {
                 bar.setAttribute('visible', showBars ? 'true' : 'false');
             });
         }
@@ -559,26 +565,34 @@ window.onload = function() {
     function trapFocus(modal) {
         const focusableElements = modal.querySelectorAll('a, button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
         const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
 
-        if (!firstElement || !lastElement) return;
+        if (!firstElement) return;
 
-        modal.addEventListener('keydown', function(e) {
-            const isTabPressed = e.key === 'Tab' || e.keyCode === 9;
-
-            if (!isTabPressed) {
-                return;
-            }
-
-            if (e.shiftKey && document.activeElement === firstElement) {
-                lastElement.focus();
-                e.preventDefault();
-            } else if (!e.shiftKey && document.activeElement === lastElement) {
-                firstElement.focus();
-                e.preventDefault();
-            }
-        });
+        if (!modal.dataset.focusTrapBound) {
+            modal.addEventListener('keydown', handleModalFocusTrap);
+            modal.dataset.focusTrapBound = 'true';
+        }
 
         firstElement.focus();
+    }
+
+    function handleModalFocusTrap(event) {
+        const isTabPressed = event.key === 'Tab' || event.keyCode === 9;
+
+        if (!isTabPressed) {
+            return;
+        }
+
+        const focusableElements = event.currentTarget.querySelectorAll('a, button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+            lastElement.focus();
+            event.preventDefault();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            firstElement.focus();
+            event.preventDefault();
+        }
     }
 };
