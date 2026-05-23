@@ -1,17 +1,21 @@
 {
-  "name": "_midterm",
+  "name": "ai-energy-consumption",
   "version": "1.0.0",
-  "description": "",
+  "description": "Prototype 3D globe for AI energy and data-centre sustainability context.",
   "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "python3 -m http.server 8000",
+    "check:data": "node -e \"for (const file of ['ai_energy_consumption_data.json','data_provenance.json']) JSON.parse(require('fs').readFileSync(file, 'utf8'))\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "ai",
+    "energy",
+    "data-visualization",
+    "aframe",
+    "sustainability"
+  ],
+  "author": "Michael Chaves",
+  "license": "MIT",
   "dependencies": {
     "@tweenjs/tween.js": "^25.0.0",
     "three": "^0.169.0"
