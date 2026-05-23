@@ -1,149 +1,90 @@
-AI Energy Consumption Visualization
+# AI Energy Context Explorer
 
-An interactive 3D data visualization showcasing the global impact of AI’s energy consumption and CO₂ emissions across different countries and regions. Built using A-Frame and D3.js, this project combines immersive 3D graphics with data storytelling to highlight the rising energy demands associated with AI technologies.
+An interactive 3D globe for exploring country-level energy, CO2, and population context around AI and data-centre sustainability discussions. The current dataset is a prototype context dataset; it is not a source-verified estimate of AI-attributed energy use or AI-caused emissions by country.
 
-Table of Contents
+## Why This Caveat Matters
 
-	•	Demo
-	•	Features
-	•	Installation
-	•	Usage
-	•	Data
-	•	Project Structure
-	•	Contributing
-	•	License
-	•	Acknowledgments
+Country-level AI energy consumption is difficult to attribute cleanly because data-centre load, model training, inference, cloud region routing, grid mix, and corporate renewable procurement are not reported consistently across countries. This project now separates:
 
-Demo
+- The bundled visualization values in `ai_energy_consumption_data.json`
+- Dataset provenance and limitations in `data_provenance.json`
+- External reference sources for AI/data-centre energy framing and CO2 accounting methodology
 
-Click here to view a live demo of the visualization. (Note: Insert link to hosted demo if available.)
+## Features
 
-Features
+- 3D globe with bars positioned by country latitude and longitude
+- Metric switching for national energy context, national CO2 context, and per-capita views
+- Region, country search, and value-range filtering
+- Hover labels and click-through country detail modal
+- Explicit dataset status, limitations, and source links in the UI
+- Illustrative detail chart that is labeled as non-sourced until a real historical series is connected
 
-	•	Interactive Globe Visualization: A 3D rotating globe with data bars representing energy consumption and CO₂ emissions.
-	•	Real-Time Data Filtering:
-	•	Data Type Selection: Toggle between viewing energy consumption and CO₂ emissions.
-	•	Region Filtering: Filter data by specific regions (e.g., Asia, Europe, North America).
-	•	Dynamic Floating Tooltips: Hover over data bars to see detailed information about each country.
-	•	User-Friendly Controls:
-	•	Orbit Controls: Click and drag to rotate the globe.
-	•	Zooming: Use the mouse wheel or touch gestures to zoom in and out.
-	•	Responsive Design: Optimized for both desktop and mobile devices.
-	•	Smooth Color Gradients: Utilizes D3’s color scales for visually appealing gradients based on data values.
-	•	Scalable Data Integration: Easily expand the dataset to include more countries or additional data metrics.
+## Run Locally
 
-Installation
+The app must be served from a local web server because it fetches JSON data files.
 
-Prerequisites
+```bash
+python3 -m http.server 8000
+```
 
-	•	A modern web browser (Chrome, Firefox, Edge, or Safari) with JavaScript enabled.
-	•	A local web server to serve the files (necessary due to browser security policies).
+Then open:
 
-Steps
-
-1. Clone the repository:
-
-git clone https://github.com/your-username/ai-energy-consumption.git
-
-2. Navigate to the project directory:
-
-cd ai-energy-consumption
-
-3. Start a local web server:
-You can use any local web server. Here are a few options:
-
-•	Python 3
-
-python -m http.server 8000
-
-•	Node.js (http-server)
-Install http-server globally if you haven’t:
-
-npm install -g http-server
-
-Then start the server:
-
-http-server -p 8000
-
-•	Live Server Extension (Visual Studio Code)
-If you use VS Code, you can use the Live Server extension to serve the files.
-
-4. Open your browser and navigate to:
-
+```text
 http://localhost:8000
+```
 
-Usage
+## Data Files
 
-	•	Interact with the Globe:
-	•	Rotate: Click and drag the globe to rotate it.
-	•	Zoom: Use the mouse wheel or pinch gestures to zoom in and out.
-	•	Use the Controls:
-	•	Data Type: Select either “Energy Consumption” or “CO₂ Emissions” from the dropdown to switch the data view.
-	•	Region: Choose a specific region to filter the data displayed on the globe.
-	•	View Data Details:
-	•	Hover: Move your cursor over a data bar to see a tooltip with detailed information about the country.
-	•	Tooltip Information: Displays the country name and the corresponding data value based on the selected data type.
+`ai_energy_consumption_data.json` contains the country records used by the prototype:
 
-Data
+- `country`
+- `region`
+- `latitude`
+- `longitude`
+- `energyConsumed`
+- `co2Emissions`
+- `population`
+- `energyPerCapita`
+- `co2PerCapita`
 
-The data used in this visualization is stored in ai_energy_consumption_data.json. It includes the following fields for each country:
+`data_provenance.json` documents the status of those values:
 
-	•	country: Name of the country.
-	•	region: Geographical region the country belongs to.
-	•	energyConsumed: Annual energy consumption attributed to AI technologies (in kilowatt-hours).
-	•	co2Emissions: Annual CO₂ emissions attributed to AI technologies (in metric tons).
-	•	year: The year the data represents.
-	•	latitude: Latitude coordinate of the country.
-	•	longitude: Longitude coordinate of the country.
+- Dataset status and measurement frame
+- Field labels, units, and provenance notes
+- Known limitations
+- Reference sources used for contextual framing
 
-Adding More Data
+## Reference Sources
 
-To expand the dataset:
+The UI links to current reference sources for the topic framing:
 
-	1.	Open ai_energy_consumption_data.json.
-	2.	Add new country entries following the existing structure.
-	3.	Ensure each new entry includes all the required fields.
+- [IEA: Key Questions on Energy and AI](https://www.iea.org/reports/key-questions-on-energy-and-ai)
+- [IEA: Energy and AI](https://www.iea.org/reports/energy-and-ai)
+- [Our World in Data: CO2 emissions](https://ourworldindata.org/co2-emissions)
 
-Project Structure
+These references do not validate every bundled country value. They provide context for AI/data-centre energy demand and CO2 accounting methodology.
 
-ai-energy-visualization/
-├── index.html
-├── js/
-│   └── ai_energy_consumption_prototype.js
-├── ai_energy_consumption_data.json
+## Recommended Next Data Step
+
+Before using this as an evidence-backed public visualization, replace the prototype records with a source-verified dataset and document:
+
+- Source URL and publication date
+- Collection year
+- Whether the metric represents AI, data centres, electricity demand, total energy, or national emissions
+- Calculation method for per-capita values
+- Confidence or caveat notes for each country
+
+## Project Structure
+
+```text
+ai-energy-consumption/
 ├── assets/
 │   ├── earth_texture.jpg
 │   └── starfield_texture.jpg
-├── css/
-│   └── (optional custom stylesheets)
+├── js/
+│   └── ai_energy_consumption_prototype.js
+├── ai_energy_consumption_data.json
+├── data_provenance.json
+├── index.html
 └── README.md
-
-	•	index.html: The main HTML file containing the structure of the web page.
-	•	js/ai_energy_consumption_prototype.js: JavaScript file handling data fetching and visualization logic.
-	•	ai_energy_consumption_data.json: JSON file containing the data for the visualization.
-	•	assets/: Directory for storing any additional assets like images or 3D models.
-	•	css/: Directory for custom CSS files (if needed).
-	•	README.md: Documentation and instructions for the project.
-
-Contributing
-
-We welcome contributions to this project! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.
-
-License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
-
-Acknowledgments
-
-	•	Libraries and Frameworks:
-	•	A-Frame
-	    •	D3.js
-	    •	A-Frame Extras
-	•	Data Sources:
-	    •	World Economic Forum
-	    •	OECD
-	    •	AI Now Institute
-	•	Inspiration:
-	    •	Thanks to all the open-source contributors and the community for providing valuable resources and examples.
-
-Feel free to reach out if you have any questions or need assistance with the project.
+```

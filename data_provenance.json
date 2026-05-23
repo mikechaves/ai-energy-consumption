@@ -1,0 +1,56 @@
+{
+  "datasetStatus": "prototype_context",
+  "lastReviewed": "2026-05-22",
+  "measurementFrame": "Country-level baseline context, not AI-attributed country estimates.",
+  "summary": "The bundled records are retained from the original prototype as illustrative national energy, emissions, and population context. They should not be read as sourced estimates of AI-specific or data-center-specific energy consumption by country.",
+  "fields": {
+    "energyConsumed": {
+      "label": "National energy context",
+      "unit": "kWh/year",
+      "provenance": "Prototype value retained for visualization scale and interaction testing; not source-verified as an AI-attributed country estimate."
+    },
+    "co2Emissions": {
+      "label": "National CO2 context",
+      "unit": "metric tons CO2/year",
+      "provenance": "Prototype value retained for emissions context; not source-verified as emissions caused by AI systems."
+    },
+    "energyPerCapita": {
+      "label": "Energy context per capita",
+      "unit": "kWh/person/year",
+      "provenance": "Derived in the prototype from the bundled energy and population values."
+    },
+    "co2PerCapita": {
+      "label": "CO2 context per capita",
+      "unit": "metric tons CO2/person/year",
+      "provenance": "Derived in the prototype from the bundled emissions and population values."
+    },
+    "population": {
+      "label": "Population",
+      "unit": "people",
+      "provenance": "Prototype population value used for per-capita calculations."
+    }
+  },
+  "limitations": [
+    "No authoritative per-country AI-attributed energy estimate is bundled with this prototype.",
+    "The current CO2 values are context metrics, not emissions caused by AI systems.",
+    "The country detail chart uses an illustrative trend until a sourced historical time series is connected.",
+    "Use this dataset for UX, interaction, and storytelling structure only until source-verified metrics are added."
+  ],
+  "referenceSources": [
+    {
+      "name": "IEA - Key Questions on Energy and AI",
+      "url": "https://www.iea.org/reports/key-questions-on-energy-and-ai",
+      "notes": "Current framing for data-centre electricity demand and AI-focused data-centre growth."
+    },
+    {
+      "name": "IEA - Energy and AI",
+      "url": "https://www.iea.org/reports/energy-and-ai",
+      "notes": "Background report on the relationship between AI adoption, data centres, and the energy sector."
+    },
+    {
+      "name": "Our World in Data - CO2 emissions",
+      "url": "https://ourworldindata.org/co2-emissions",
+      "notes": "Reference for how national CO2 emissions are estimated and documented."
+    }
+  ]
+}
