@@ -370,12 +370,12 @@
     <div id="instructionOverlay" class="overlay" role="dialog" aria-labelledby="instructionTitle" aria-describedby="instructionDesc">
         <div class="overlay-content">
             <h2 id="instructionTitle">Welcome to the AI Energy Context Explorer</h2>
-            <p id="instructionDesc">Explore country-level context for discussing AI, data centres, energy demand, and CO2 emissions.</p>
+            <p id="instructionDesc">Explore live Great Britain grid carbon intensity and electricity mix context for AI and data-centre sustainability discussions.</p>
             <ul class="instruction-list">
                 <li><i class="fas fa-arrows-alt"></i><strong>Rotate:</strong> Use your mouse or touch to rotate the globe.</li>
                 <li><i class="fas fa-search-plus"></i><strong>Zoom:</strong> Scroll or use the zoom buttons to zoom in and out.</li>
-                <li><i class="fas fa-info-circle"></i><strong>Details:</strong> Hover over the bars to inspect prototype values.</li>
-                <li><i class="fas fa-filter"></i><strong>Filter:</strong> Use the controls to compare countries and regions.</li>
+                <li><i class="fas fa-info-circle"></i><strong>Details:</strong> Hover over the bars to inspect live regional values.</li>
+                <li><i class="fas fa-filter"></i><strong>Filter:</strong> Use the controls to compare live grid regions.</li>
             </ul>
             <button id="closeInstructionsBtn" aria-label="Start Exploring">Start Exploring</button>
         </div>
@@ -390,11 +390,10 @@
     <div id="infoPanel" aria-live="polite">
         <h3>AI Energy Context</h3>
         <p>
-            This globe provides country-level context for discussions about AI, data centres, energy demand, and CO2 emissions.
-            The bundled values are prototype context metrics, not verified AI-attributed country estimates.
+            This globe uses live Great Britain regional grid data as practical context for discussions about AI, data centres, energy demand, and CO2 emissions.
         </p>
         <div id="dataStatus" class="data-disclaimer">
-            Loading data provenance...
+            Loading live grid data...
         </div>
         <h4>Reference Sources</h4>
         <ul id="dataSourceList">
@@ -409,27 +408,24 @@
 
     <!-- User Interface Controls -->
     <div id="controls">
-        <label for="dataTypeSelect">Select Context Metric:</label>
+        <label for="dataTypeSelect">Select Live Metric:</label>
         <select id="dataTypeSelect" aria-label="Select Context Metric">
-            <option value="energyConsumed">National energy context</option>
-            <option value="co2Emissions">National CO2 context</option>
-            <option value="energyPerCapita">Energy context per capita</option>
-            <option value="co2PerCapita">CO2 context per capita</option>
+            <option value="carbonIntensity">Carbon intensity</option>
+            <option value="renewablePercentage">Renewables share</option>
+            <option value="lowCarbonPercentage">Low-carbon share</option>
+            <option value="gasPercentage">Gas share</option>
         </select>
 
-        <label for="regionSelect">Filter by Region:</label>
+        <label for="regionSelect">Filter by Grid Area:</label>
         <select id="regionSelect" aria-label="Filter by Region">
             <option value="All">All Regions</option>
-            <option value="Africa">Africa</option>
-            <option value="Asia">Asia</option>
-            <option value="Europe">Europe</option>
-            <option value="North America">North America</option>
-            <option value="South America">South America</option>
-            <option value="Oceania">Oceania</option>
+            <option value="Scotland">Scotland</option>
+            <option value="England">England</option>
+            <option value="Wales">Wales</option>
         </select>
 
-        <label for="countrySearch">Search Country:</label>
-        <input type="text" id="countrySearch" placeholder="Type a country name..." aria-label="Search Country" />
+        <label for="countrySearch">Search Grid Region:</label>
+        <input type="text" id="countrySearch" placeholder="Type a grid region..." aria-label="Search Country" />
 
         <label for="dataRange">Filter by Metric Value:</label>
         <input type="range" id="dataRange" min="0" max="100" value="100" step="1" aria-label="Filter by Metric Value">
@@ -459,12 +455,12 @@
             <h2 id="modalCountryName">Country Name</h2>
             <div id="modalContent">
                 <!-- Detailed information will be populated here -->
-                <p><strong>National energy context:</strong> <span id="modalEnergyConsumed"></span></p>
-                <p><strong>National CO2 context:</strong> <span id="modalCO2Emissions"></span></p>
-                <p><strong>Population:</strong> <span id="modalPopulation"></span></p>
-                <canvas id="historicalChart" width="400" height="200" aria-label="Historical Data Chart"></canvas>
+                <p><strong>Carbon intensity:</strong> <span id="modalEnergyConsumed"></span></p>
+                <p><strong>Renewables share:</strong> <span id="modalCO2Emissions"></span></p>
+                <p><strong>Low-carbon share:</strong> <span id="modalLowCarbon"></span></p>
+                <canvas id="historicalChart" width="400" height="200" aria-label="Current generation mix chart"></canvas>
                 <p id="modalHistoricalNote" class="modal-note">
-                    Trend chart is illustrative only until sourced historical data is connected.
+                    Generation mix is sourced from the current NESO regional API response.
                 </p>
                 <p id="modalDataNote" class="modal-note"></p>
             </div>

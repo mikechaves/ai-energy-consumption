@@ -1,30 +1,35 @@
 # AI Energy Context Explorer
 
-An interactive 3D globe for exploring country-level energy, CO2, and population context around AI and data-centre sustainability discussions. The current dataset is a prototype context dataset; it is not a source-verified estimate of AI-attributed energy use or AI-caused emissions by country.
+An interactive 3D globe for exploring live Great Britain grid carbon intensity and electricity-mix context around AI and data-centre sustainability discussions.
 
-## Why This Caveat Matters
+The app no longer uses a mock country JSON dataset as its primary source. It fetches the current regional interval from the [NESO Carbon Intensity API](https://carbon-intensity.github.io/api-definitions/) and maps the live regional values onto the globe.
 
-Country-level AI energy consumption is difficult to attribute cleanly because data-centre load, model training, inference, cloud region routing, grid mix, and corporate renewable procurement are not reported consistently across countries. This project now separates:
+## Why This Data Frame
 
-- The bundled visualization values in `ai_energy_consumption_data.json`
+There is no reliable public real-time feed for AI-attributed energy consumption by country. The honest live signal is grid context: carbon intensity and generation mix for the electricity system where compute could run.
+
+This project now separates:
+
+- Live grid data from the NESO Carbon Intensity API
 - Dataset provenance and limitations in `data_provenance.json`
-- External reference sources for AI/data-centre energy framing and CO2 accounting methodology
+- AI/data-centre context from IEA references
 
 ## Features
 
-- 3D globe with bars positioned by country latitude and longitude
-- Metric switching for national energy context, national CO2 context, and per-capita views
-- Region, country search, and value-range filtering
-- Hover labels and click-through country detail modal
-- Explicit dataset status, limitations, and source links in the UI
-- Illustrative detail chart that is labeled as non-sourced until a real historical series is connected
+- Live regional carbon intensity for Great Britain grid areas
+- Live renewables, low-carbon, and gas generation-share metrics
+- Region filtering for England, Scotland, and Wales
+- Search for individual grid regions
+- Hover labels and click-through details for each region
+- Modal chart showing the current generation mix from the live API response
+- Explicit source, interval, and limitation copy in the UI
 
 ## Run Locally
 
-The app must be served from a local web server because it fetches JSON data files.
+The app must be served from a local web server because it fetches API and JSON data.
 
 ```bash
-python3 -m http.server 8000
+npm start
 ```
 
 Then open:
@@ -33,46 +38,37 @@ Then open:
 http://localhost:8000
 ```
 
-## Data Files
+## Data Sources
 
-`ai_energy_consumption_data.json` contains the country records used by the prototype:
+`https://api.carbonintensity.org.uk/regional` provides the live regional feed. The app uses:
 
-- `country`
-- `region`
-- `latitude`
-- `longitude`
-- `energyConsumed`
-- `co2Emissions`
-- `population`
-- `energyPerCapita`
-- `co2PerCapita`
+- `intensity.forecast` as `carbonIntensity`
+- `generationmix` to calculate `renewablePercentage`, `lowCarbonPercentage`, and `gasPercentage`
+- `from` and `to` as the current settlement interval
 
-`data_provenance.json` documents the status of those values:
+`data_provenance.json` documents:
 
 - Dataset status and measurement frame
-- Field labels, units, and provenance notes
+- Metric labels, units, and provenance notes
 - Known limitations
 - Reference sources used for contextual framing
 
 ## Reference Sources
 
-The UI links to current reference sources for the topic framing:
-
-- [IEA: Key Questions on Energy and AI](https://www.iea.org/reports/key-questions-on-energy-and-ai)
+- [NESO Carbon Intensity API](https://carbon-intensity.github.io/api-definitions/)
 - [IEA: Energy and AI](https://www.iea.org/reports/energy-and-ai)
-- [Our World in Data: CO2 emissions](https://ourworldindata.org/co2-emissions)
+- [IEA: Energy demand from AI](https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai)
 
-These references do not validate every bundled country value. They provide context for AI/data-centre energy demand and CO2 accounting methodology.
+## Scope Notes
 
-## Recommended Next Data Step
+This is still not an AI-emissions calculator. It does not estimate the energy use of a particular model, request, GPU cluster, cloud account, or data centre. It gives a live grid-carbon context layer that can support a later workload-estimation feature.
 
-Before using this as an evidence-backed public visualization, replace the prototype records with a source-verified dataset and document:
+Good future additions:
 
-- Source URL and publication date
-- Collection year
-- Whether the metric represents AI, data centres, electricity demand, total energy, or national emissions
-- Calculation method for per-capita values
-- Confidence or caveat notes for each country
+- Optional Electricity Maps or WattTime provider behind a server-side proxy
+- A workload estimator using model calls, tokens, GPU-hours, or cloud region
+- Provider switcher with source confidence and freshness states
+- Cached serverless endpoint to avoid client-side API-key exposure for paid providers
 
 ## Project Structure
 
@@ -83,8 +79,8 @@ ai-energy-consumption/
 │   └── starfield_texture.jpg
 ├── js/
 │   └── ai_energy_consumption_prototype.js
-├── ai_energy_consumption_data.json
 ├── data_provenance.json
 ├── index.html
+├── package.json
 └── README.md
 ```
