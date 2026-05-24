@@ -1,56 +1,51 @@
 {
-  "datasetStatus": "prototype_context",
-  "lastReviewed": "2026-05-22",
-  "measurementFrame": "Country-level baseline context, not AI-attributed country estimates.",
-  "summary": "The bundled records are retained from the original prototype as illustrative national energy, emissions, and population context. They should not be read as sourced estimates of AI-specific or data-center-specific energy consumption by country.",
+  "datasetStatus": "live_api",
+  "lastReviewed": "2026-05-24",
+  "measurementFrame": "Live Great Britain regional electricity-system context, not AI-attributed energy consumption.",
+  "summary": "The visualization fetches the current regional forecast interval from the NESO Carbon Intensity API for Great Britain and maps each distribution-network region onto the globe.",
   "fields": {
-    "energyConsumed": {
-      "label": "National energy context",
-      "unit": "kWh/year",
-      "provenance": "Prototype value retained for visualization scale and interaction testing; not source-verified as an AI-attributed country estimate."
+    "carbonIntensity": {
+      "label": "Carbon intensity",
+      "unit": "gCO2/kWh",
+      "provenance": "Current regional forecast carbon intensity from the NESO Carbon Intensity API."
     },
-    "co2Emissions": {
-      "label": "National CO2 context",
-      "unit": "metric tons CO2/year",
-      "provenance": "Prototype value retained for emissions context; not source-verified as emissions caused by AI systems."
+    "renewablePercentage": {
+      "label": "Renewables share",
+      "unit": "%",
+      "provenance": "Calculated from the live generation mix as biomass, hydro, solar, and wind."
     },
-    "energyPerCapita": {
-      "label": "Energy context per capita",
-      "unit": "kWh/person/year",
-      "provenance": "Derived in the prototype from the bundled energy and population values."
+    "lowCarbonPercentage": {
+      "label": "Low-carbon share",
+      "unit": "%",
+      "provenance": "Calculated from the live generation mix as biomass, hydro, nuclear, solar, and wind."
     },
-    "co2PerCapita": {
-      "label": "CO2 context per capita",
-      "unit": "metric tons CO2/person/year",
-      "provenance": "Derived in the prototype from the bundled emissions and population values."
-    },
-    "population": {
-      "label": "Population",
-      "unit": "people",
-      "provenance": "Prototype population value used for per-capita calculations."
+    "gasPercentage": {
+      "label": "Gas share",
+      "unit": "%",
+      "provenance": "Current regional gas share from the NESO generation mix."
     }
   },
   "limitations": [
-    "No authoritative per-country AI-attributed energy estimate is bundled with this prototype.",
-    "The current CO2 values are context metrics, not emissions caused by AI systems.",
-    "The country detail chart uses an illustrative trend until a sourced historical time series is connected.",
-    "Use this dataset for UX, interaction, and storytelling structure only until source-verified metrics are added."
+    "This live feed covers Great Britain electricity-system regions only.",
+    "Values describe regional grid context, not AI-attributed energy use or emissions.",
+    "The feed is near-real-time forecast and estimated grid data for the current settlement interval.",
+    "Regional coordinates are approximate visual anchors for distribution-network areas, not exact boundaries."
   ],
   "referenceSources": [
     {
-      "name": "IEA - Key Questions on Energy and AI",
-      "url": "https://www.iea.org/reports/key-questions-on-energy-and-ai",
-      "notes": "Current framing for data-centre electricity demand and AI-focused data-centre growth."
+      "name": "NESO Carbon Intensity API",
+      "url": "https://carbon-intensity.github.io/api-definitions/",
+      "notes": "Official Great Britain carbon-intensity API with current regional intensity and generation mix."
     },
     {
       "name": "IEA - Energy and AI",
       "url": "https://www.iea.org/reports/energy-and-ai",
-      "notes": "Background report on the relationship between AI adoption, data centres, and the energy sector."
+      "notes": "Context for AI, data centres, and electricity demand."
     },
     {
-      "name": "Our World in Data - CO2 emissions",
-      "url": "https://ourworldindata.org/co2-emissions",
-      "notes": "Reference for how national CO2 emissions are estimated and documented."
+      "name": "IEA - Energy demand from AI",
+      "url": "https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai",
+      "notes": "Background on data-centre electricity demand estimates and modeling."
     }
   ]
 }

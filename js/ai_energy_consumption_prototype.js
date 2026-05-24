@@ -1,12 +1,29 @@
-const DATA_URL = 'ai_energy_consumption_data.json';
+const LIVE_DATA_URL = 'https://api.carbonintensity.org.uk/regional';
 const PROVENANCE_URL = 'data_provenance.json';
 
+const REGION_COORDINATES = {
+    1: { latitude: 57.5, longitude: -4.0, group: 'Scotland' },
+    2: { latitude: 55.9, longitude: -3.7, group: 'Scotland' },
+    3: { latitude: 54.2, longitude: -2.8, group: 'England' },
+    4: { latitude: 54.9, longitude: -1.8, group: 'England' },
+    5: { latitude: 53.8, longitude: -1.4, group: 'England' },
+    6: { latitude: 53.1, longitude: -3.3, group: 'Wales' },
+    7: { latitude: 51.6, longitude: -3.7, group: 'Wales' },
+    8: { latitude: 52.5, longitude: -2.2, group: 'England' },
+    9: { latitude: 52.9, longitude: -1.2, group: 'England' },
+    10: { latitude: 52.2, longitude: 0.6, group: 'England' },
+    11: { latitude: 50.7, longitude: -3.6, group: 'England' },
+    12: { latitude: 51.1, longitude: -1.2, group: 'England' },
+    13: { latitude: 51.5, longitude: -0.1, group: 'England' },
+    14: { latitude: 51.2, longitude: 0.5, group: 'England' }
+};
+
 const FALLBACK_PROVENANCE = {
-    summary: 'The bundled records are prototype context values and are not verified AI-attributed country estimates.',
+    summary: 'Live Great Britain regional carbon intensity data from the NESO Carbon Intensity API.',
     fields: {},
     limitations: [
-        'No authoritative per-country AI-attributed energy estimate is bundled with this prototype.',
-        'Use the current values for interaction and storytelling structure only.'
+        'This feed covers Great Britain electricity-system regions only.',
+        'Values describe grid context, not AI-attributed energy use.'
     ],
     referenceSources: []
 };
@@ -19,17 +36,18 @@ window.onload = function() {
     }
 
     Promise.all([
-        fetchJson(DATA_URL),
+        fetchLiveGridData(),
         fetchJson(PROVENANCE_URL).catch(error => {
             console.warn('Data provenance failed to load:', error);
             return FALLBACK_PROVENANCE;
         })
     ])
-        .then(([data, provenance]) => {
-            initVisualization(data, provenance || FALLBACK_PROVENANCE);
+        .then(([liveData, provenance]) => {
+            initVisualization(liveData.records, provenance || FALLBACK_PROVENANCE, liveData.metadata);
         })
         .catch(error => {
-            console.error('Error loading visualization data:', error);
+            console.error('Error loading live grid data:', error);
+            renderFatalDataError(error);
             if (loadingSpinner) {
                 loadingSpinner.style.display = 'none';
             }
@@ -44,7 +62,70 @@ window.onload = function() {
         });
     }
 
-    function initVisualization(data, provenance) {
+    function fetchLiveGridData() {
+        return fetchJson(LIVE_DATA_URL).then(payload => {
+            const interval = payload?.data?.[0];
+            if (!interval || !Array.isArray(interval.regions)) {
+                throw new Error('Carbon Intensity API returned an unexpected response shape.');
+            }
+
+            return {
+                metadata: {
+                    sourceName: 'NESO Carbon Intensity API',
+                    sourceUrl: 'https://carbon-intensity.github.io/api-definitions/',
+                    from: interval.from,
+                    to: interval.to,
+                    fetchedAt: new Date().toISOString()
+                },
+                records: normalizeLiveRegions(interval.regions)
+            };
+        });
+    }
+
+    function normalizeLiveRegions(regions) {
+        return regions
+            .filter(region => REGION_COORDINATES[region.regionid])
+            .map(region => {
+                const coordinates = REGION_COORDINATES[region.regionid];
+                const generationMix = region.generationmix || [];
+                const mixByFuel = Object.fromEntries(generationMix.map(item => [item.fuel, Number(item.perc) || 0]));
+                const renewablePercentage = sumMix(mixByFuel, ['biomass', 'hydro', 'solar', 'wind']);
+                const lowCarbonPercentage = sumMix(mixByFuel, ['biomass', 'hydro', 'nuclear', 'solar', 'wind']);
+                const gasPercentage = mixByFuel.gas || 0;
+
+                return {
+                    country: region.shortname,
+                    region: coordinates.group,
+                    regionId: region.regionid,
+                    operatorRegion: region.dnoregion,
+                    latitude: coordinates.latitude,
+                    longitude: coordinates.longitude,
+                    carbonIntensity: Number(region.intensity && region.intensity.forecast) || 0,
+                    intensityIndex: region.intensity && region.intensity.index,
+                    renewablePercentage: roundMetric(renewablePercentage),
+                    lowCarbonPercentage: roundMetric(lowCarbonPercentage),
+                    gasPercentage: roundMetric(gasPercentage),
+                    generationMix
+                };
+            });
+    }
+
+    function sumMix(mixByFuel, fuels) {
+        return fuels.reduce((total, fuel) => total + (mixByFuel[fuel] || 0), 0);
+    }
+
+    function roundMetric(value) {
+        return Math.round(value * 10) / 10;
+    }
+
+    function renderFatalDataError(error) {
+        const dataStatus = document.getElementById('dataStatus');
+        if (dataStatus) {
+            dataStatus.innerText = `Live grid data could not be loaded. ${error.message}`;
+        }
+    }
+
+    function initVisualization(data, provenance, liveMetadata) {
         const scene = document.querySelector('a-scene');
         const globe = document.getElementById('globe');
         const cameraRig = document.getElementById('cameraRig');
@@ -64,7 +145,7 @@ window.onload = function() {
         const modalCountryName = document.getElementById('modalCountryName');
         const modalEnergyConsumed = document.getElementById('modalEnergyConsumed');
         const modalCO2Emissions = document.getElementById('modalCO2Emissions');
-        const modalPopulation = document.getElementById('modalPopulation');
+        const modalLowCarbon = document.getElementById('modalLowCarbon');
         const modalDataNote = document.getElementById('modalDataNote');
         const modalHistoricalNote = document.getElementById('modalHistoricalNote');
         const historicalChartCanvas = document.getElementById('historicalChart');
@@ -80,7 +161,7 @@ window.onload = function() {
         let maxValue = getMaxValue(currentDataType);
         let filteredData = [];
         let displayMaxValue = maxValue;
-        let historicalChart;
+        let generationMixChart;
         let lastTooltipUpdate = 0;
         let tooltipLoopStarted = false;
         let activeBars = [];
@@ -89,6 +170,7 @@ window.onload = function() {
         renderProvenance();
         setupEventListeners();
         initializeAutocomplete();
+        syncMetricOptionLabels();
         updateVisualization();
         resumeGlobeRotation();
 
@@ -98,7 +180,7 @@ window.onload = function() {
 
         function renderProvenance() {
             if (dataStatus) {
-                dataStatus.innerText = provenance.summary || FALLBACK_PROVENANCE.summary;
+                dataStatus.innerText = `${provenance.summary || FALLBACK_PROVENANCE.summary} Current interval: ${formatDateTime(liveMetadata.from)} to ${formatDateTime(liveMetadata.to)}.`;
             }
 
             renderList(dataLimitations, provenance.limitations);
@@ -157,17 +239,17 @@ window.onload = function() {
                 currentDataType = dataTypeSelect.value;
                 maxValue = getMaxValue(currentDataType);
                 dataRange.value = 100;
-                showSuccessMessage('Context metric changed.');
+                showSuccessMessage('Live metric changed.');
                 updateVisualization();
             });
 
             regionSelect.addEventListener('change', () => {
-                showSuccessMessage('Region filter applied.');
+                showSuccessMessage('Grid area filter applied.');
                 updateVisualization();
             });
 
             countrySearch.addEventListener('input', debounce(() => {
-                showSuccessMessage('Country search updated.');
+                showSuccessMessage('Grid region search updated.');
                 updateVisualization();
             }, 300));
 
@@ -194,12 +276,18 @@ window.onload = function() {
         }
 
         function initializeAutocomplete() {
-            const countryNames = data.map(d => d.country);
+            const regionNames = data.map(d => d.country);
             new Awesomplete(countrySearch, {
-                list: countryNames,
+                list: regionNames,
                 minChars: 1,
                 maxItems: 10,
                 autoFirst: true
+            });
+        }
+
+        function syncMetricOptionLabels() {
+            Array.from(dataTypeSelect.options).forEach(option => {
+                option.innerText = formatDataType(option.value);
             });
         }
 
@@ -249,7 +337,7 @@ window.onload = function() {
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('color', colorScale(value));
                 bar.setAttribute('class', 'data-bar');
-                bar.dataset.country = dataItem.country;
+                bar.dataset.region = dataItem.country;
 
                 bar.object3D.quaternion.copy(computeBarRotation(barPosition));
                 bar.object3D.position.copy(
@@ -280,7 +368,7 @@ window.onload = function() {
             label.innerHTML = `
                 <strong>${dataItem.country}</strong><br/>
                 ${formatDataType(currentDataType)}: ${formatValue(dataItem[currentDataType], currentDataType)}<br/>
-                Population: ${formatValue(dataItem.population, 'population')}
+                ${dataItem.intensityIndex ? `Intensity: ${dataItem.intensityIndex}` : ''}
             `;
             document.body.appendChild(label);
             barElement.tooltipLabel = label;
@@ -324,7 +412,7 @@ window.onload = function() {
             tooltip.innerHTML = `
                 <strong>${dataItem.country}</strong><br/>
                 ${formatDataType(currentDataType)}: ${formatValue(dataItem[currentDataType], currentDataType)}<br/>
-                Population: ${formatValue(dataItem.population, 'population')}
+                ${dataItem.intensityIndex ? `Intensity: ${dataItem.intensityIndex}` : ''}
             `;
 
             const barPosition = new THREE.Vector3();
@@ -345,28 +433,26 @@ window.onload = function() {
 
         function openInfoModal(dataItem) {
             modalCountryName.innerText = dataItem.country;
-            modalEnergyConsumed.innerText = formatValue(dataItem.energyConsumed, 'energyConsumed');
-            modalCO2Emissions.innerText = formatValue(dataItem.co2Emissions, 'co2Emissions');
-            modalPopulation.innerText = formatValue(dataItem.population, 'population');
-            modalDataNote.innerText = provenance.summary || FALLBACK_PROVENANCE.summary;
-            modalHistoricalNote.innerText = 'Trend chart is illustrative only and does not represent source-verified historical data.';
+            modalEnergyConsumed.innerText = formatValue(dataItem.carbonIntensity, 'carbonIntensity');
+            modalCO2Emissions.innerText = formatValue(dataItem.renewablePercentage, 'renewablePercentage');
+            modalLowCarbon.innerText = formatValue(dataItem.lowCarbonPercentage, 'lowCarbonPercentage');
+            modalDataNote.innerText = `${dataItem.operatorRegion}. Data interval: ${formatDateTime(liveMetadata.from)} to ${formatDateTime(liveMetadata.to)}. Source: ${liveMetadata.sourceName}.`;
+            modalHistoricalNote.innerText = 'Generation mix is sourced from the current NESO regional API response.';
 
-            const historicalData = generateIllustrativeTrend(dataItem);
-            if (historicalChart) {
-                historicalChart.destroy();
+            if (generationMixChart) {
+                generationMixChart.destroy();
             }
 
-            historicalChart = new Chart(historicalChartCanvas.getContext('2d'), {
-                type: 'line',
+            const generationMix = dataItem.generationMix.filter(item => Number(item.perc) > 0);
+            generationMixChart = new Chart(historicalChartCanvas.getContext('2d'), {
+                type: 'bar',
                 data: {
-                    labels: historicalData.labels,
+                    labels: generationMix.map(item => item.fuel),
                     datasets: [{
-                        label: `${formatDataType(currentDataType)} - illustrative trend only`,
-                        data: historicalData.values,
+                        label: 'Current generation mix (%)',
+                        data: generationMix.map(item => Number(item.perc) || 0),
                         borderColor: 'rgba(46, 139, 87, 1)',
-                        backgroundColor: 'rgba(46, 139, 87, 0.18)',
-                        fill: true,
-                        tension: 0.2
+                        backgroundColor: 'rgba(46, 139, 87, 0.35)'
                     }]
                 },
                 options: {
@@ -376,22 +462,13 @@ window.onload = function() {
                         legend: { display: true },
                         tooltip: { mode: 'index', intersect: false }
                     },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    },
                     scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Illustrative period'
-                            }
-                        },
                         y: {
+                            beginAtZero: true,
+                            max: 100,
                             title: {
                                 display: true,
-                                text: formatDataType(currentDataType)
+                                text: 'Share of generation (%)'
                             }
                         }
                     }
@@ -400,15 +477,6 @@ window.onload = function() {
 
             infoModal.style.display = 'block';
             trapFocus(infoModal);
-        }
-
-        function generateIllustrativeTrend(dataItem) {
-            const value = Number(dataItem[currentDataType]) || 0;
-            const factors = [0.72, 0.76, 0.81, 0.84, 0.88, 0.92, 0.95, 0.97, 0.99, 1];
-            return {
-                labels: factors.map((_, index) => `T-${factors.length - index - 1}`).slice(0, -1).concat('T'),
-                values: factors.map(factor => Math.round(value * factor))
-            };
         }
 
         function closeInfoModal() {
@@ -501,11 +569,10 @@ window.onload = function() {
 
         function formatDataType(dataType) {
             return getFieldMeta(dataType).label || {
-                energyConsumed: 'National energy context',
-                co2Emissions: 'National CO2 context',
-                energyPerCapita: 'Energy context per capita',
-                co2PerCapita: 'CO2 context per capita',
-                population: 'Population'
+                carbonIntensity: 'Carbon intensity',
+                renewablePercentage: 'Renewables share',
+                lowCarbonPercentage: 'Low-carbon share',
+                gasPercentage: 'Gas share'
             }[dataType] || dataType;
         }
 
@@ -516,20 +583,16 @@ window.onload = function() {
 
             const unit = getFieldMeta(dataType).unit;
             const formatted = Number(value).toLocaleString(undefined, {
-                maximumFractionDigits: Number(value) < 100 ? 2 : 0
+                maximumFractionDigits: Number(value) < 100 ? 1 : 0
             });
 
-            if (!unit || dataType === 'population') {
-                return formatted;
-            }
-
-            return `${formatted} ${unit}`;
+            return unit ? `${formatted} ${unit}` : formatted;
         }
 
         function formatCompactValue(value, dataType) {
             const unit = getFieldMeta(dataType).unit;
             const formatted = Intl.NumberFormat(undefined, {
-                notation: 'compact',
+                notation: value < 1000 ? 'standard' : 'compact',
                 maximumFractionDigits: 1
             }).format(value);
 
@@ -550,6 +613,16 @@ window.onload = function() {
                 successMessage.style.display = 'none';
             }, 1800);
         }
+    }
+
+    function formatDateTime(value) {
+        if (!value) return 'unknown';
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return 'unknown';
+        return date.toLocaleString(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+        });
     }
 
     function debounce(func, delay) {
