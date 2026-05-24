@@ -64,7 +64,7 @@ window.onload = function() {
 
     function fetchLiveGridData() {
         return fetchJson(LIVE_DATA_URL).then(payload => {
-            const interval = payload.data && payload.data[0];
+            const interval = payload?.data?.[0];
             if (!interval || !Array.isArray(interval.regions)) {
                 throw new Error('Carbon Intensity API returned an unexpected response shape.');
             }
@@ -617,7 +617,9 @@ window.onload = function() {
 
     function formatDateTime(value) {
         if (!value) return 'unknown';
-        return new Date(value).toLocaleString(undefined, {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return 'unknown';
+        return date.toLocaleString(undefined, {
             dateStyle: 'medium',
             timeStyle: 'short'
         });
