@@ -1,82 +1,71 @@
 # AI Energy Context Explorer
 
-An interactive 3D globe for exploring live Great Britain grid carbon intensity and electricity-mix context around AI and data-centre sustainability discussions.
+> [!IMPORTANT]
+> This repository is archived and no longer actively maintained. It began as a graduate academic prototype using a synthetic country-level dataset. The synthetic values were created to demonstrate 3D interaction and data-visualization techniques and must not be treated as empirical AI energy or emissions data. A later revision replaced the synthetic runtime with live Great Britain grid-carbon data from the NESO Carbon Intensity API. Neither version calculates AI-attributed emissions by country, model, request, GPU cluster, cloud account, or data centre.
 
-The app no longer uses a mock country JSON dataset as its primary source. It fetches the current regional interval from the [NESO Carbon Intensity API](https://carbon-intensity.github.io/api-definitions/) and maps the live regional values onto the globe.
+## Status
 
-## Why This Data Frame
+- **Status:** Archived.
+- **Original project:** Graduate academic prototype, 2023.
+- **Data-provenance revision:** 2026.
+- **Original runtime data:** Synthetic.
+- **Revised runtime data:** Live Great Britain regional grid-carbon context.
+- **Measurement boundary:** Grid context, not AI-attributed energy consumption.
+- **Maintenance status:** No planned feature development.
 
-There is no reliable public real-time feed for AI-attributed energy consumption by country. The honest live signal is grid context: carbon intensity and generation mix for the electricity system where compute could run.
+## Version History
 
-This project now separates:
+- [`v1-academic-synthetic`](https://github.com/mikechaves/ai-energy-consumption/releases/tag/v1-academic-synthetic) preserves the final version of the original interaction prototype. Its country-level energy and emissions values were synthetic fixtures for visualization development, not observed or collected measurements.
+- [`v2-grid-context`](https://github.com/mikechaves/ai-energy-consumption/releases/tag/v2-grid-context) preserves the later revision, which replaced the synthetic runtime with live Great Britain regional grid-carbon context and added explicit provenance, limitations, and archival documentation.
 
-- Live grid data from the NESO Carbon Intensity API
-- Dataset provenance and limitations in `data_provenance.json`
-- AI/data-centre context from IEA references
+Neither version provides country-level measurements of energy use or emissions attributable to AI.
 
-## Features
+## What This Demonstrates
 
-- Live regional carbon intensity for Great Britain grid areas
-- Live renewables, low-carbon, and gas generation-share metrics
-- Region filtering for England, Scotland, and Wales
-- Search for individual grid regions
-- Hover labels and click-through details for each region
-- Modal chart showing the current generation mix from the live API response
-- Explicit source, interval, and limitation copy in the UI
+- A-Frame scene construction.
+- D3-based data binding and scales.
+- Geospatial coordinate mapping.
+- Interactive filtering.
+- Tooltips and detail views.
+- Data provenance and limitation disclosure.
+- Iteration from a synthetic prototype to a real-data context layer.
 
-## Run Locally
+## What This Does Not Claim
 
-The app must be served from a local web server because it fetches API and JSON data.
+- It is not an AI-emissions calculator.
+- It does not measure the energy use of an AI model or request.
+- It does not attribute national grid emissions to AI.
+- It does not provide a country-level database of AI energy consumption.
+- The original synthetic values are not evidence for policy, research, procurement, or sustainability reporting.
 
-```bash
-npm start
-```
+## Revised Runtime and Data Sources
 
-Then open:
+The revised runtime fetches the current regional interval from the [NESO Carbon Intensity API](https://carbon-intensity.github.io/api-definitions/) and maps regional Great Britain electricity-system values onto the globe. The feed supplies regional forecast carbon intensity and generation mix. `data_provenance.json` documents the measurement frame, metric provenance, limitations, and contextual references.
 
-```text
-http://localhost:8000
-```
-
-## Data Sources
-
-`https://api.carbonintensity.org.uk/regional` provides the live regional feed. The app uses:
-
-- `intensity.forecast` as `carbonIntensity`
-- `generationmix` to calculate `renewablePercentage`, `lowCarbonPercentage`, and `gasPercentage`
-- `from` and `to` as the current settlement interval
-
-`data_provenance.json` documents:
-
-- Dataset status and measurement frame
-- Metric labels, units, and provenance notes
-- Known limitations
-- Reference sources used for contextual framing
-
-## Reference Sources
+Reference sources:
 
 - [NESO Carbon Intensity API](https://carbon-intensity.github.io/api-definitions/)
 - [IEA: Energy and AI](https://www.iea.org/reports/energy-and-ai)
 - [IEA: Energy demand from AI](https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai)
 
-## Scope Notes
+## Run Locally for Historical Verification
 
-This is still not an AI-emissions calculator. It does not estimate the energy use of a particular model, request, GPU cluster, cloud account, or data centre. It gives a live grid-carbon context layer that can support a later workload-estimation feature.
+The project must be served through a local web server because the revised runtime fetches API and JSON data.
 
-Good future additions:
+```bash
+npm start
+```
 
-- Optional Electricity Maps or WattTime provider behind a server-side proxy
-- A workload estimator using model calls, tokens, GPU-hours, or cloud region
-- Provider switcher with source confidence and freshness states
-- Cached serverless endpoint to avoid client-side API-key exposure for paid providers
+Then open `http://localhost:8000`.
 
 ## Project Structure
 
 ```text
 ai-energy-consumption/
 ├── assets/
-│   ├── earth_texture.jpg
-│   └── starfield_texture.jpg
+├── docs/
+│   ├── ARCHIVE_DECISION.md
+│   └── backlog/
 ├── js/
 │   └── ai_energy_consumption_prototype.js
 ├── data_provenance.json
@@ -84,3 +73,5 @@ ai-energy-consumption/
 ├── package.json
 └── README.md
 ```
+
+See [the archive decision record](docs/ARCHIVE_DECISION.md) for the preservation rationale and version boundaries.
