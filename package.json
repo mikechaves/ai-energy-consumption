@@ -1,7 +1,7 @@
 {
   "name": "ai-energy-consumption",
   "version": "1.0.0",
-  "description": "Prototype 3D globe for AI energy and data-centre sustainability context.",
+  "description": "Archived graduate academic 3D visualization prototype, later revised to use live Great Britain grid-carbon context.",
   "main": "index.js",
   "scripts": {
     "start": "python3 -m http.server 8000",
